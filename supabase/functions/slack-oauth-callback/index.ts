@@ -8,6 +8,8 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
+  console.log('slack-oauth-callback function called:', req.method);
+  
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -16,8 +18,30 @@ serve(async (req) => {
     const url = new URL(req.url)
     const code = url.searchParams.get('code')
     const state = url.searchParams.get('state')
+    const error = url.searchParams.get('error')
+
+    console.log('OAuth callback parameters:', {
+      hasCode: !!code,
+      hasState: !!state,
+      error: error
+    });
+
+    if (error) {
+      console.error('Slack OAuth error:', error);
+      return new Response(
+        null,
+        {
+          status: 302,
+          headers: {
+            ...corsHeaders,
+            'Location': `${url.origin}/auth/error?error=${encodeURIComponent(error)}`,
+          },
+        }
+      )
+    }
 
     if (!code) {
+      console.error('Authorization code not found');
       return new Response('Authorization code not found', { 
         status: 400,
         headers: corsHeaders 
@@ -29,7 +53,14 @@ serve(async (req) => {
     const clientSecret = Deno.env.get('SLACK_CLIENT_SECRET')
     const redirectUri = Deno.env.get('SLACK_REDIRECT_URL')
 
+    console.log('Environment variables check:', {
+      hasClientId: !!clientId,
+      hasClientSecret: !!clientSecret,
+      hasRedirectUri: !!redirectUri
+    });
+
     if (!clientId || !clientSecret || !redirectUri) {
+      console.error('Missing Slack configuration');
       return new Response('Missing Slack configuration', { 
         status: 500,
         headers: corsHeaders 
@@ -37,6 +68,7 @@ serve(async (req) => {
     }
 
     // Exchange authorization code for access token
+    console.log('Exchanging code for token...');
     const tokenResponse = await fetch('https://slack.com/api/oauth.v2.access', {
       method: 'POST',
       headers: {
@@ -51,9 +83,14 @@ serve(async (req) => {
     })
 
     const tokenData = await tokenResponse.json()
+    console.log('Token exchange response:', {
+      ok: tokenData.ok,
+      team: tokenData.team?.name,
+      error: tokenData.error
+    });
 
     if (!tokenData.ok) {
-      console.error('Slack OAuth error:', tokenData)
+      console.error('Slack OAuth token exchange error:', tokenData)
       return new Response('Failed to exchange token', { 
         status: 400,
         headers: corsHeaders 
@@ -66,7 +103,8 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Store the token in database
-    const { error } = await supabase
+    console.log('Storing token in database...');
+    const { error: dbError } = await supabase
       .from('slack_tokens')
       .upsert({
         team_id: tokenData.team.id,
@@ -83,14 +121,16 @@ serve(async (req) => {
         onConflict: 'team_id,user_id'
       })
 
-    if (error) {
-      console.error('Database error:', error)
+    if (dbError) {
+      console.error('Database error:', dbError)
       return new Response('Failed to store token', { 
         status: 500,
         headers: corsHeaders 
       })
     }
 
+    console.log('Token stored successfully, redirecting...');
+    
     // Redirect back to frontend with success
     const frontendUrl = `${url.origin}/auth/success?team=${encodeURIComponent(tokenData.team.name)}`
     

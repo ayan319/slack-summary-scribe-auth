@@ -10,10 +10,10 @@ const AuthSuccess = () => {
   const teamName = searchParams.get('team');
 
   useEffect(() => {
-    // Auto-redirect to main app after 3 seconds
+    // Auto-redirect to main app after 5 seconds
     const timer = setTimeout(() => {
       navigate('/');
-    }, 3000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [navigate]);
@@ -29,14 +29,23 @@ const AuthSuccess = () => {
           {teamName ? `Connected to ${teamName}` : 'Your Slack workspace has been connected'}
         </p>
         <p className="text-sm text-gray-500 mb-6">
-          You'll be redirected to the app in a few seconds...
+          You can now test the integration or return to the main app.
         </p>
-        <Button 
-          onClick={() => navigate('/')}
-          className="w-full"
-        >
-          Continue to App
-        </Button>
+        <div className="space-y-3">
+          <Button 
+            onClick={() => navigate('/slack-test')}
+            className="w-full bg-blue-600 hover:bg-blue-700"
+          >
+            Test Slack Integration
+          </Button>
+          <Button 
+            onClick={() => navigate('/')}
+            variant="outline"
+            className="w-full"
+          >
+            Return to App
+          </Button>
+        </div>
       </div>
     </div>
   );
