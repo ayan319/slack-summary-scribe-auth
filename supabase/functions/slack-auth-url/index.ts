@@ -20,16 +20,22 @@ serve(async (req) => {
     console.log('Environment check:', {
       hasClientId: !!clientId,
       hasRedirectUri: !!redirectUri,
-      redirectUri: redirectUri
+      redirectUri: redirectUri,
+      clientIdLength: clientId?.length || 0
     });
 
     if (!clientId || !redirectUri) {
       console.error('Missing Slack configuration:', {
         clientId: !!clientId,
-        redirectUri: !!redirectUri
+        redirectUri: !!redirectUri,
+        clientIdValue: clientId ? `${clientId.substring(0, 10)}...` : 'undefined',
+        redirectUriValue: redirectUri || 'undefined'
       });
       return new Response(
-        JSON.stringify({ error: 'Missing Slack configuration' }), 
+        JSON.stringify({ 
+          error: 'Missing Slack configuration',
+          details: 'Please ensure SLACK_CLIENT_ID and SLACK_REDIRECT_URL are set in Supabase secrets'
+        }), 
         { 
           status: 500,
           headers: {
@@ -57,7 +63,7 @@ serve(async (req) => {
 
     const authUrl = `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`
 
-    console.log('Generated auth URL:', authUrl);
+    console.log('Generated auth URL (truncated):', authUrl.substring(0, 100) + '...');
 
     return new Response(
       JSON.stringify({ url: authUrl, state }),
@@ -72,7 +78,10 @@ serve(async (req) => {
   } catch (error) {
     console.error('Auth URL generation error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }), 
+      JSON.stringify({ 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }), 
       { 
         status: 500,
         headers: {

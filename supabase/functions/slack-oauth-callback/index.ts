@@ -23,7 +23,8 @@ serve(async (req) => {
     console.log('OAuth callback parameters:', {
       hasCode: !!code,
       hasState: !!state,
-      error: error
+      error: error,
+      codeLength: code?.length || 0
     });
 
     if (error) {
@@ -56,11 +57,13 @@ serve(async (req) => {
     console.log('Environment variables check:', {
       hasClientId: !!clientId,
       hasClientSecret: !!clientSecret,
-      hasRedirectUri: !!redirectUri
+      hasRedirectUri: !!redirectUri,
+      clientIdLength: clientId?.length || 0,
+      clientSecretLength: clientSecret?.length || 0
     });
 
     if (!clientId || !clientSecret || !redirectUri) {
-      console.error('Missing Slack configuration');
+      console.error('Missing Slack configuration for token exchange');
       return new Response('Missing Slack configuration', { 
         status: 500,
         headers: corsHeaders 
@@ -86,12 +89,13 @@ serve(async (req) => {
     console.log('Token exchange response:', {
       ok: tokenData.ok,
       team: tokenData.team?.name,
-      error: tokenData.error
+      error: tokenData.error,
+      hasAccessToken: !!tokenData.access_token
     });
 
     if (!tokenData.ok) {
       console.error('Slack OAuth token exchange error:', tokenData)
-      return new Response('Failed to exchange token', { 
+      return new Response(`Failed to exchange token: ${tokenData.error}`, { 
         status: 400,
         headers: corsHeaders 
       })
@@ -100,6 +104,11 @@ serve(async (req) => {
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    console.log('Supabase config:', {
+      hasUrl: !!supabaseUrl,
+      hasServiceKey: !!supabaseKey
+    });
+    
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // Store the token in database
@@ -123,7 +132,7 @@ serve(async (req) => {
 
     if (dbError) {
       console.error('Database error:', dbError)
-      return new Response('Failed to store token', { 
+      return new Response(`Failed to store token: ${dbError.message}`, { 
         status: 500,
         headers: corsHeaders 
       })
@@ -144,7 +153,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('OAuth callback error:', error)
-    return new Response('Internal server error', { 
+    return new Response(`Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`, { 
       status: 500,
       headers: corsHeaders 
     })
