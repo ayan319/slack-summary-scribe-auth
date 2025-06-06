@@ -10,9 +10,9 @@ import { Slack, User, Calendar, Activity } from 'lucide-react';
 interface SlackToken {
   id: string;
   team_id: string;
-  team_name: string;
+  team_name: string | null;
   user_id: string;
-  scope: string;
+  scope: string | null;
   created_at: string;
 }
 
@@ -33,7 +33,12 @@ const Dashboard = () => {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching Slack tokens:', error);
+        throw error;
+      }
+      
+      console.log('Fetched Slack tokens:', data);
       setSlackTokens(data || []);
     } catch (error) {
       console.error('Error fetching Slack tokens:', error);
@@ -54,7 +59,10 @@ const Dashboard = () => {
         .delete()
         .eq('id', tokenId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error disconnecting Slack:', error);
+        throw error;
+      }
 
       setSlackTokens(prev => prev.filter(token => token.id !== tokenId));
       toast({
@@ -152,7 +160,7 @@ const Dashboard = () => {
                       <div className="flex items-center space-x-3">
                         <Slack className="h-8 w-8 text-purple-600" />
                         <div>
-                          <h4 className="font-medium">{token.team_name}</h4>
+                          <h4 className="font-medium">{token.team_name || 'Unknown Team'}</h4>
                           <p className="text-sm text-gray-500">Team ID: {token.team_id}</p>
                           <p className="text-xs text-gray-400">
                             Connected: {new Date(token.created_at).toLocaleDateString()}
