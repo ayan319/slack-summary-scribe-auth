@@ -1,225 +1,117 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
-import { Slack, User, Calendar, Activity } from 'lucide-react';
 
-interface SlackToken {
-  id: string;
-  team_id: string;
-  team_name: string | null;
-  user_id: string;
-  scope: string | null;
-  created_at: string;
+import React from "react";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { BarChart3, Star, TrendingUp, TrendingDown, FileText, Flag, Users } from "lucide-react";
+
+const dummySummaries = [
+  {
+    id: "1",
+    summary: {
+      candidateSummary: "Strong JavaScript skills, eager learner.",
+      keySkills: ["JavaScript", "React", "Teamwork"],
+      redFlags: ["Late projects"],
+      suggestedActions: ["Offer mentorship"],
+      rating: 4.5,
+    }
+  },
+  {
+    id: "2",
+    summary: {
+      candidateSummary: "Excellent communicator, experienced in backend.",
+      keySkills: ["Communication", "Node.js", "Leadership", "React"],
+      redFlags: [],
+      suggestedActions: ["Invite to next round", "Project assignment"],
+      rating: 4.2,
+    }
+  },
+  {
+    id: "3",
+    summary: {
+      candidateSummary: "Needs improvement on testing practices.",
+      keySkills: ["Testing", "TypeScript", "Teamwork"],
+      redFlags: ["Insufficient test coverage"],
+      suggestedActions: ["Extra assignment"],
+      rating: 3.9,
+    }
+  }
+];
+
+// Helpers for aggregates
+const flatten = (arr: string[][]) => arr.reduce((a, b) => a.concat(b), []);
+function topCount(list: string[], topN = 3) {
+  const count: Record<string, number> = {};
+  list.forEach(item => { count[item] = (count[item] || 0) + 1; });
+  return Object.entries(count)
+    .sort(([,a],[,b]) => b - a)
+    .slice(0, topN)
+    .map(([name, num]) => ({ name, count: num }));
 }
 
-const Dashboard = () => {
-  const [slackTokens, setSlackTokens] = useState<SlackToken[]>([]);
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-  const navigate = useNavigate();
+const total = dummySummaries.length;
+const allSkills = flatten(dummySummaries.map(s => s.summary.keySkills));
+const allRedFlags = flatten(dummySummaries.map(s => s.summary.redFlags));
+const allActions = flatten(dummySummaries.map(s => s.summary.suggestedActions));
+const avgRating = dummySummaries.reduce((acc, s) => acc + s.summary.rating, 0) / total;
 
-  useEffect(() => {
-    fetchSlackTokens();
-  }, []);
+const topSkills = topCount(allSkills);
+const topRedFlags = topCount(allRedFlags);
+const topActions = topCount(allActions);
 
-  const fetchSlackTokens = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('slack_tokens')
-        .select('*')
-        .order('created_at', { ascending: false });
+const StatCard = ({
+  icon,
+  label,
+  value,
+}: { icon: React.ReactNode; label: string; value: string | number }) => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium">{label}</CardTitle>
+      {icon}
+    </CardHeader>
+    <CardContent>
+      <div className="text-2xl font-bold">{value}</div>
+    </CardContent>
+  </Card>
+);
 
-      if (error) {
-        console.error('Error fetching Slack tokens:', error);
-        throw error;
-      }
-      
-      console.log('Fetched Slack tokens:', data);
-      setSlackTokens(data || []);
-    } catch (error) {
-      console.error('Error fetching Slack tokens:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load Slack connections",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+const ListCard = ({
+  icon,
+  label,
+  items,
+}: { icon: React.ReactNode; label: string; items: { name: string; count: number }[] }) => (
+  <Card>
+    <CardHeader className="flex flex-row items-center justify-between pb-2">
+      <CardTitle className="text-sm font-medium">{label}</CardTitle>
+      {icon}
+    </CardHeader>
+    <CardContent>
+      <ul className="space-y-2">
+        {items.length === 0 && <li className="text-muted-foreground text-sm">None</li>}
+        {items.map((item, i) => (
+          <li key={i} className="flex justify-between">
+            <span>{item.name}</span>
+            <span className="bg-gray-200 rounded-full px-2 py-0.5 text-xs">{item.count}</span>
+          </li>
+        ))}
+      </ul>
+    </CardContent>
+  </Card>
+);
 
-  const disconnectSlack = async (tokenId: string) => {
-    try {
-      const { error } = await supabase
-        .from('slack_tokens')
-        .delete()
-        .eq('id', tokenId);
-
-      if (error) {
-        console.error('Error disconnecting Slack:', error);
-        throw error;
-      }
-
-      setSlackTokens(prev => prev.filter(token => token.id !== tokenId));
-      toast({
-        title: "Success",
-        description: "Slack workspace disconnected",
-      });
-    } catch (error) {
-      console.error('Error disconnecting Slack:', error);
-      toast({
-        title: "Error",
-        description: "Failed to disconnect Slack workspace",
-        variant: "destructive",
-      });
-    }
-  };
-
+const Dashboard: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-          <p className="text-gray-600">Manage your Slack integrations and view your activity</p>
-        </div>
+    <div className="max-w-5xl mx-auto py-10 px-2 space-y-8">
+      <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
+      <div className="grid md:grid-cols-4 gap-6">
+        <StatCard icon={<FileText className="text-blue-500 h-6 w-6" />} label="Total Summaries" value={total} />
+        <StatCard icon={<Star className="text-yellow-500 h-6 w-6" />} label="Avg. Rating" value={avgRating.toFixed(2)} />
+        <StatCard icon={<Users className="text-green-500 h-6 w-6" />} label="Most Frequent Skill" value={topSkills[0]?.name || "N/A"} />
+        <StatCard icon={<Flag className="text-red-500 h-6 w-6" />} label="Top Red Flag" value={topRedFlags[0]?.name || "None"} />
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Connected Workspaces</CardTitle>
-              <Slack className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{slackTokens.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Active Slack connections
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Last Connected</CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {slackTokens.length > 0 
-                  ? new Date(slackTokens[0].created_at).toLocaleDateString()
-                  : 'N/A'
-                }
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Most recent integration
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Status</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">Active</div>
-              <p className="text-xs text-muted-foreground">
-                All systems operational
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Connected Slack Workspaces</CardTitle>
-              <CardDescription>
-                Manage your Slack workspace connections
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-4">Loading...</div>
-              ) : slackTokens.length === 0 ? (
-                <div className="text-center py-8">
-                  <Slack className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Slack workspaces connected</h3>
-                  <p className="text-gray-500 mb-4">Connect your first Slack workspace to get started</p>
-                  <Button onClick={() => navigate('/')}>
-                    Add to Slack
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {slackTokens.map((token) => (
-                    <div key={token.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <Slack className="h-8 w-8 text-purple-600" />
-                        <div>
-                          <h4 className="font-medium">{token.team_name || 'Unknown Team'}</h4>
-                          <p className="text-sm text-gray-500">Team ID: {token.team_id}</p>
-                          <p className="text-xs text-gray-400">
-                            Connected: {new Date(token.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex space-x-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate('/slack-test')}
-                        >
-                          Test Connection
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => disconnectSlack(token.id)}
-                        >
-                          Disconnect
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-              <CardDescription>
-                Manage your Slack integration
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button
-                onClick={() => navigate('/slack-test')}
-                className="w-full"
-                variant="outline"
-              >
-                Test Slack Connection
-              </Button>
-              <Button
-                onClick={() => navigate('/settings')}
-                className="w-full"
-                variant="outline"
-              >
-                Account Settings
-              </Button>
-              <Button
-                onClick={() => navigate('/')}
-                className="w-full"
-              >
-                Add Another Workspace
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="grid md:grid-cols-3 gap-6">
+        <ListCard icon={<TrendingUp className="text-purple-500 h-5 w-5" />} label="Top Skills" items={topSkills} />
+        <ListCard icon={<TrendingDown className="text-rose-500 h-5 w-5" />} label="Top Red Flags" items={topRedFlags} />
+        <ListCard icon={<BarChart3 className="text-blue-400 h-5 w-5" />} label="Suggested Actions" items={topActions} />
       </div>
     </div>
   );
