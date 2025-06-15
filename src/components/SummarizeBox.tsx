@@ -71,7 +71,6 @@ const SummarizeBox = () => {
   };
 
   const startVoiceRecording = () => {
-    // Placeholder for voice recording functionality
     toast({
       title: "Voice Recording",
       description: "Voice-to-text feature coming soon!",
@@ -138,10 +137,22 @@ const SummarizeBox = () => {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to generate summary');
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to generate summary');
       }
 
       const data = await response.text();
+      
+      if (!data || data.trim() === '') {
+        toast({
+          title: "No summary returned",
+          description: "The API returned an empty response. Please try again.",
+          variant: "destructive",
+        });
+        setSummary(null);
+        return;
+      }
+
       const parsedSummary = parseSummaryResponse(data);
       setSummary(parsedSummary);
 
@@ -157,13 +168,15 @@ const SummarizeBox = () => {
       setHistory(prev => [historyItem, ...prev]);
       
       toast({
-        title: "Summary generated successfully",
+        title: "Summary generated successfully!",
         description: "Your interview has been analyzed",
       });
     } catch (error) {
+      console.error('Error generating summary:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Something went wrong.';
       toast({
         title: "Error generating summary",
-        description: "Please try again later",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -223,6 +236,7 @@ const SummarizeBox = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => fileInputRef.current?.click()}
+                    disabled={isLoading}
                     className="flex items-center gap-2"
                   >
                     <Upload className="h-4 w-4" />
@@ -232,6 +246,7 @@ const SummarizeBox = () => {
                     variant="outline"
                     size="sm"
                     onClick={startVoiceRecording}
+                    disabled={isLoading}
                     className="flex items-center gap-2"
                   >
                     <Mic className="h-4 w-4" />
@@ -252,6 +267,7 @@ const SummarizeBox = () => {
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
                   rows={8}
+                  disabled={isLoading}
                   className="resize-none"
                 />
 
