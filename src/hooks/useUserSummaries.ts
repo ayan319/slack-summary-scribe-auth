@@ -66,13 +66,13 @@ export function useUserSummaries(session: Session | null) {
       // Store in Supabase
       const { data, error } = await supabase
         .from("summaries")
-        .insert([{
+        .insert({
           user_id: session.user.id,
           transcript: entry.transcript,
           summary: entry.summary,
-          timestamp: entry.timestamp,
+          timestamp: entry.timestamp.toISOString(), // convert Date to string
           title: entry.title
-        }])
+        })
         .select();
       if (error) throw error;
       if (data && data.length > 0) {
@@ -128,3 +128,4 @@ export function useUserSummaries(session: Session | null) {
     }
   };
 }
+
