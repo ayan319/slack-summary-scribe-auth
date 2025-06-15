@@ -12,22 +12,7 @@ import {
   Trash2,
   Eye
 } from 'lucide-react';
-
-interface SummaryData {
-  candidateSummary: string;
-  keySkills: string[];
-  redFlags: string[];
-  suggestedActions: string[];
-  rating: number;
-}
-
-interface HistoryItem {
-  id: string;
-  timestamp: Date;
-  transcript: string;
-  summary: SummaryData;
-  title: string;
-}
+import { HistoryItem } from '../types/summary';
 
 interface TranscriptHistoryProps {
   history: HistoryItem[];

@@ -13,14 +13,7 @@ import {
   TrendingUp,
   Target
 } from 'lucide-react';
-
-interface SummaryData {
-  candidateSummary: string;
-  keySkills: string[];
-  redFlags: string[];
-  suggestedActions: string[];
-  rating: number;
-}
+import { SummaryData } from '../types/summary';
 
 interface SummaryDisplayProps {
   summary: SummaryData;

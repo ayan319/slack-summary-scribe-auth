@@ -1,43 +1,12 @@
 
-import React, { useState, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import React, { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Upload, 
-  Mic, 
-  Send, 
-  Loader2, 
-  User, 
-  AlertTriangle, 
-  CheckCircle, 
-  Star, 
-  History,
-  FileText,
-  Download
-} from 'lucide-react';
-import { SummaryDisplay } from './SummaryDisplay';
+import { User, History, FileText } from 'lucide-react';
+import { SummaryData, HistoryItem } from '../types/summary';
+import { TranscriptInput } from './TranscriptInput';
+import { SummaryResult } from './SummaryResult';
 import { TranscriptHistory } from './TranscriptHistory';
-
-interface SummaryData {
-  candidateSummary: string;
-  keySkills: string[];
-  redFlags: string[];
-  suggestedActions: string[];
-  rating: number;
-}
-
-interface HistoryItem {
-  id: string;
-  timestamp: Date;
-  transcript: string;
-  summary: SummaryData;
-  title: string;
-}
 
 const SummarizeBox = () => {
   const [transcript, setTranscript] = useState('');
@@ -45,37 +14,34 @@ const SummarizeBox = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [activeTab, setActiveTab] = useState('summarize');
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type === 'text/plain') {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const content = e.target?.result as string;
-        setTranscript(content);
-        toast({
-          title: "File uploaded successfully",
-          description: `Loaded ${file.name}`,
-        });
-      };
-      reader.readAsText(file);
-    } else {
-      toast({
-        title: "Invalid file type",
-        description: "Please upload a .txt file",
-        variant: "destructive",
-      });
+  // Load history from localStorage on component mount
+  useEffect(() => {
+    try {
+      const savedHistory = localStorage.getItem('summaryHistory');
+      if (savedHistory) {
+        const parsedHistory = JSON.parse(savedHistory);
+        // Convert timestamp strings back to Date objects
+        const historyWithDates = parsedHistory.map((item: any) => ({
+          ...item,
+          timestamp: new Date(item.timestamp)
+        }));
+        setHistory(historyWithDates);
+      }
+    } catch (error) {
+      console.error('Error loading history from localStorage:', error);
     }
-  };
+  }, []);
 
-  const startVoiceRecording = () => {
-    toast({
-      title: "Voice Recording",
-      description: "Voice-to-text feature coming soon!",
-    });
-  };
+  // Save history to localStorage whenever history changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('summaryHistory', JSON.stringify(history));
+    } catch (error) {
+      console.error('Error saving history to localStorage:', error);
+    }
+  }, [history]);
 
   const parseSummaryResponse = (response: string): SummaryData => {
     // Parse the backend response string into structured data
@@ -156,7 +122,7 @@ const SummarizeBox = () => {
       const parsedSummary = parseSummaryResponse(data);
       setSummary(parsedSummary);
 
-      // Add to history
+      // Add to history (limit to last 10 items)
       const historyItem: HistoryItem = {
         id: Date.now().toString(),
         timestamp: new Date(),
@@ -165,7 +131,7 @@ const SummarizeBox = () => {
         title: `Interview Summary - ${new Date().toLocaleDateString()}`
       };
       
-      setHistory(prev => [historyItem, ...prev]);
+      setHistory(prev => [historyItem, ...prev].slice(0, 10));
       
       toast({
         title: "Summary generated successfully!",
@@ -221,78 +187,13 @@ const SummarizeBox = () => {
           </TabsList>
 
           <TabsContent value="summarize" className="space-y-6">
-            {/* Input Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5" />
-                  Interview Transcript
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Input Options */}
-                <div className="flex gap-2 mb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isLoading}
-                    className="flex items-center gap-2"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Upload .txt
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={startVoiceRecording}
-                    disabled={isLoading}
-                    className="flex items-center gap-2"
-                  >
-                    <Mic className="h-4 w-4" />
-                    Voice Input
-                  </Button>
-                </div>
-
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  accept=".txt"
-                  className="hidden"
-                />
-
-                <Textarea
-                  placeholder="Paste your interview transcript here or upload a .txt file..."
-                  value={transcript}
-                  onChange={(e) => setTranscript(e.target.value)}
-                  rows={8}
-                  disabled={isLoading}
-                  className="resize-none"
-                />
-
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-500">
-                    {transcript.length} characters
-                  </span>
-                  <Button
-                    onClick={handleSummarize}
-                    disabled={isLoading || !transcript.trim()}
-                    className="flex items-center gap-2"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Send className="h-4 w-4" />
-                    )}
-                    {isLoading ? 'Analyzing...' : 'Analyze Interview'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Summary Display */}
-            {summary && <SummaryDisplay summary={summary} />}
+            <TranscriptInput
+              transcript={transcript}
+              setTranscript={setTranscript}
+              isLoading={isLoading}
+              onSummarize={handleSummarize}
+            />
+            <SummaryResult summary={summary} />
           </TabsContent>
 
           <TabsContent value="history">
