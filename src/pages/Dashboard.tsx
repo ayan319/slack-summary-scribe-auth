@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { BarChart3, Star, TrendingUp, TrendingDown, FileText, Flag, Users } from "lucide-react";
@@ -77,7 +76,6 @@ const Dashboard: React.FC = () => {
         setLoading(false);
         return;
       }
-      // Fetch up to 100 recent summaries for this user
       const { data, error } = await supabase
         .from("summaries")
         .select("summary")
@@ -99,8 +97,7 @@ const Dashboard: React.FC = () => {
           data
             .map(item => {
               // Defensive parsing: check fields before casting
-              const summary = item.summary as SummaryData;
-              // Optionally: validate expected fields
+              const summary = item.summary as unknown as SummaryData;
               if (
                 typeof summary === "object" &&
                 summary !== null &&
@@ -112,7 +109,6 @@ const Dashboard: React.FC = () => {
               ) {
                 return { summary };
               }
-              // Omit invalid entries (shouldn't happen)
               return null;
             })
             .filter(Boolean) as { summary: SummaryData }[]
@@ -174,4 +170,3 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
-
