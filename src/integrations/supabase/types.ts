@@ -1,4 +1,3 @@
-
 export type Json =
   | string
   | number
@@ -39,6 +38,33 @@ export type Database = {
           team_id?: string
           team_name?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      summaries: {
+        Row: {
+          id: string
+          summary: Json
+          timestamp: string
+          title: string | null
+          transcript: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          summary: Json
+          timestamp?: string
+          title?: string | null
+          transcript: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          summary?: Json
+          timestamp?: string
+          title?: string | null
+          transcript?: string
           user_id?: string
         }
         Relationships: []
