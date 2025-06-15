@@ -1,62 +1,25 @@
 
-import React from "react";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import React, { useEffect, useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { BarChart3, Star, TrendingUp, TrendingDown, FileText, Flag, Users } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { SummaryData } from "@/types/summary";
 
-const dummySummaries = [
-  {
-    id: "1",
-    summary: {
-      candidateSummary: "Strong JavaScript skills, eager learner.",
-      keySkills: ["JavaScript", "React", "Teamwork"],
-      redFlags: ["Late projects"],
-      suggestedActions: ["Offer mentorship"],
-      rating: 4.5,
-    }
-  },
-  {
-    id: "2",
-    summary: {
-      candidateSummary: "Excellent communicator, experienced in backend.",
-      keySkills: ["Communication", "Node.js", "Leadership", "React"],
-      redFlags: [],
-      suggestedActions: ["Invite to next round", "Project assignment"],
-      rating: 4.2,
-    }
-  },
-  {
-    id: "3",
-    summary: {
-      candidateSummary: "Needs improvement on testing practices.",
-      keySkills: ["Testing", "TypeScript", "Teamwork"],
-      redFlags: ["Insufficient test coverage"],
-      suggestedActions: ["Extra assignment"],
-      rating: 3.9,
-    }
-  }
-];
+// Helper: flatten an array of arrays
+const flatten = <T,>(arr: T[][]) => arr.reduce((a, b) => a.concat(b), []);
 
-// Helpers for aggregates
-const flatten = (arr: string[][]) => arr.reduce((a, b) => a.concat(b), []);
+// Aggregate top N counts for array values
 function topCount(list: string[], topN = 3) {
   const count: Record<string, number> = {};
   list.forEach(item => { count[item] = (count[item] || 0) + 1; });
   return Object.entries(count)
-    .sort(([,a],[,b]) => b - a)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, topN)
     .map(([name, num]) => ({ name, count: num }));
 }
 
-const total = dummySummaries.length;
-const allSkills = flatten(dummySummaries.map(s => s.summary.keySkills));
-const allRedFlags = flatten(dummySummaries.map(s => s.summary.redFlags));
-const allActions = flatten(dummySummaries.map(s => s.summary.suggestedActions));
-const avgRating = dummySummaries.reduce((acc, s) => acc + s.summary.rating, 0) / total;
-
-const topSkills = topCount(allSkills);
-const topRedFlags = topCount(allRedFlags);
-const topActions = topCount(allActions);
-
+// Card components as before
 const StatCard = ({
   icon,
   label,
@@ -98,6 +61,79 @@ const ListCard = ({
 );
 
 const Dashboard: React.FC = () => {
+  const [summaries, setSummaries] = useState<{summary: SummaryData}[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    let cancelled = false;
+    // Fetch summaries for current user
+    async function fetchData() {
+      setLoading(true);
+      setErrorMsg(null);
+      // Auth required: get current user
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setErrorMsg("You must be logged in to see your analytics.");
+        setSummaries([]);
+        setLoading(false);
+        return;
+      }
+      // Fetch up to 100 recent summaries for this user
+      const { data, error } = await supabase
+        .from("summaries")
+        .select("summary")
+        .eq("user_id", session.user.id)
+        .order("timestamp", { ascending: false })
+        .limit(100);
+      if (error) {
+        setErrorMsg("Unable to load analytics. " + error.message);
+        setSummaries([]);
+        toast({
+          title: "Error loading analytics",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else if (!cancelled) {
+        setSummaries(data || []);
+      }
+      setLoading(false);
+    }
+    fetchData();
+    return () => { cancelled = true };
+  }, [toast]);
+
+  // Computed analytics
+  const total = summaries.length;
+  const allSkills = flatten(summaries.map(s => s.summary.keySkills));
+  const allRedFlags = flatten(summaries.map(s => s.summary.redFlags));
+  const allActions = flatten(summaries.map(s => s.summary.suggestedActions));
+  const ratings = summaries.map(s => s.summary.rating);
+  const avgRating = ratings.length > 0 ? (ratings.reduce((acc, n) => acc + n, 0) / ratings.length) : 0;
+
+  const topSkills = topCount(allSkills);
+  const topRedFlags = topCount(allRedFlags);
+  const topActions = topCount(allActions);
+
+  if (loading) {
+    return (
+      <div className="max-w-5xl mx-auto py-10 px-2 space-y-8">
+        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
+        <div className="text-center py-16 text-lg text-muted-foreground">Loading analytics…</div>
+      </div>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <div className="max-w-5xl mx-auto py-10 px-2 space-y-8">
+        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
+        <div className="text-center py-16 text-lg text-destructive">{errorMsg}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto py-10 px-2 space-y-8">
       <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
