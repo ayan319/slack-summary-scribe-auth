@@ -19,7 +19,6 @@ function topCount(list: string[], topN = 3) {
     .map(([name, num]) => ({ name, count: num }));
 }
 
-// Card components as before
 const StatCard = ({
   icon,
   label,
@@ -61,18 +60,16 @@ const ListCard = ({
 );
 
 const Dashboard: React.FC = () => {
-  const [summaries, setSummaries] = useState<{summary: SummaryData}[]>([]);
+  const [summaries, setSummaries] = useState<{ summary: SummaryData }[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     let cancelled = false;
-    // Fetch summaries for current user
     async function fetchData() {
       setLoading(true);
       setErrorMsg(null);
-      // Auth required: get current user
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
         setErrorMsg("You must be logged in to see your analytics.");
@@ -87,6 +84,7 @@ const Dashboard: React.FC = () => {
         .eq("user_id", session.user.id)
         .order("timestamp", { ascending: false })
         .limit(100);
+
       if (error) {
         setErrorMsg("Unable to load analytics. " + error.message);
         setSummaries([]);
@@ -95,8 +93,30 @@ const Dashboard: React.FC = () => {
           description: error.message,
           variant: "destructive",
         });
-      } else if (!cancelled) {
-        setSummaries(data || []);
+      } else if (!cancelled && data) {
+        // Transform summary from generic JSON to typed SummaryData
+        setSummaries(
+          data
+            .map(item => {
+              // Defensive parsing: check fields before casting
+              const summary = item.summary as SummaryData;
+              // Optionally: validate expected fields
+              if (
+                typeof summary === "object" &&
+                summary !== null &&
+                Array.isArray(summary.keySkills) &&
+                Array.isArray(summary.redFlags) &&
+                Array.isArray(summary.suggestedActions) &&
+                typeof summary.candidateSummary === "string" &&
+                typeof summary.rating === "number"
+              ) {
+                return { summary };
+              }
+              // Omit invalid entries (shouldn't happen)
+              return null;
+            })
+            .filter(Boolean) as { summary: SummaryData }[]
+        );
       }
       setLoading(false);
     }
@@ -154,3 +174,4 @@ const Dashboard: React.FC = () => {
 };
 
 export default Dashboard;
+
