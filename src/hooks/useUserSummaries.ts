@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
@@ -69,7 +68,7 @@ export function useUserSummaries(session: Session | null) {
         .insert({
           user_id: session.user.id,
           transcript: entry.transcript,
-          summary: entry.summary,
+          summary: entry.summary as any, // Ensures TypeScript treats as JSON
           timestamp: entry.timestamp.toISOString(), // convert Date to string
           title: entry.title
         })
@@ -128,4 +127,3 @@ export function useUserSummaries(session: Session | null) {
     }
   };
 }
-
