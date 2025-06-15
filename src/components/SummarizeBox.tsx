@@ -1,48 +1,43 @@
-
-import React, { useState, useEffect } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
-import { User, History, FileText } from 'lucide-react';
-import { SummaryData, HistoryItem } from '../types/summary';
-import { TranscriptInput } from './TranscriptInput';
-import { SummaryResult } from './SummaryResult';
-import { TranscriptHistory } from './TranscriptHistory';
+import React, { useState, useEffect } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { User, History, FileText } from "lucide-react";
+import { SummaryData, HistoryItem } from "@/types/summary";
+import { TranscriptInput } from "./TranscriptInput";
+import { SummaryResult } from "./SummaryResult";
+import { TranscriptHistory } from "./TranscriptHistory";
+import { useUserSummaries } from "@/hooks/useUserSummaries";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 
 const SummarizeBox = () => {
-  const [transcript, setTranscript] = useState('');
+  const [transcript, setTranscript] = useState("");
   const [summary, setSummary] = useState<SummaryData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [activeTab, setActiveTab] = useState('summarize');
+  const [activeTab, setActiveTab] = useState("summarize");
+  const [session, setSession] = useState<Session | null>(null);
+
   const { toast } = useToast();
 
-  // Load history from localStorage on component mount
+  // Auth: Listen for user login/logout and keep session up-to-date
   useEffect(() => {
-    try {
-      const savedHistory = localStorage.getItem('summaryHistory');
-      if (savedHistory) {
-        const parsedHistory = JSON.parse(savedHistory);
-        // Convert timestamp strings back to Date objects
-        const historyWithDates = parsedHistory.map((item: any) => ({
-          ...item,
-          timestamp: new Date(item.timestamp)
-        }));
-        setHistory(historyWithDates);
-      }
-    } catch (error) {
-      console.error('Error loading history from localStorage:', error);
-    }
+    // 1. Setup listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
+      setSession(sess);
+    });
+
+    // 2. THEN check for session
+    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Save history to localStorage whenever history changes
-  useEffect(() => {
-    try {
-      localStorage.setItem('summaryHistory', JSON.stringify(history));
-    } catch (error) {
-      console.error('Error saving history to localStorage:', error);
-    }
-  }, [history]);
+  // Supabase/Local summary sync
+  const { history, addHistory, clearHistory, loading, reload } = useUserSummaries(session);
 
+  // Update summary saving logic to insert into correct storage
   const parseSummaryResponse = (response: string): SummaryData => {
     // Parse the backend response string into structured data
     const sections = response.split('\n\n');
@@ -122,16 +117,15 @@ const SummarizeBox = () => {
       const parsedSummary = parseSummaryResponse(data);
       setSummary(parsedSummary);
 
-      // Add to history (limit to last 10 items)
-      const historyItem: HistoryItem = {
-        id: Date.now().toString(),
-        timestamp: new Date(),
+      // Add to user-connected history (local or Supabase)
+      const now = new Date();
+      const historyItem = {
+        timestamp: now,
         transcript,
         summary: parsedSummary,
-        title: `Interview Summary - ${new Date().toLocaleDateString()}`
+        title: `Interview Summary - ${now.toLocaleDateString()}`
       };
-      
-      setHistory(prev => [historyItem, ...prev].slice(0, 10));
+      await addHistory(historyItem);
       
       toast({
         title: "Summary generated successfully!",
@@ -200,7 +194,9 @@ const SummarizeBox = () => {
             <TranscriptHistory 
               history={history} 
               onLoadItem={loadFromHistory}
-              onClearHistory={() => setHistory([])}
+              onClearHistory={clearHistory}
+              isLoading={loading}
+              onReload={reload}
             />
           </TabsContent>
         </Tabs>

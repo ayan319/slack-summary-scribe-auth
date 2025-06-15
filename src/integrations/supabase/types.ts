@@ -42,6 +42,33 @@ export type Database = {
         }
         Relationships: []
       }
+      summaries: {
+        Row: {
+          id: string
+          summary: Json
+          timestamp: string
+          title: string | null
+          transcript: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          summary: Json
+          timestamp?: string
+          title?: string | null
+          transcript: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          summary?: Json
+          timestamp?: string
+          title?: string | null
+          transcript?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
