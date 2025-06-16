@@ -58,3 +58,16 @@ export const SUMMARY_TAGS = [
 ] as const;
 
 export type SummaryTag = typeof SUMMARY_TAGS[number];
+
+export interface FilterOptions {
+  search: string;
+  tags: string[];
+  rating: number | null;
+}
+
+export interface NotionSettings {
+  isConnected: boolean;
+  accessToken?: string;
+  databaseId?: string;
+  autoSync: boolean;
+}

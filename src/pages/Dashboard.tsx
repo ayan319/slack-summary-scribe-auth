@@ -2,10 +2,12 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Star, TrendingUp, TrendingDown, FileText, Flag, Users, Activity, Calendar } from "lucide-react";
+import { BarChart3, Star, TrendingUp, TrendingDown, FileText, Flag, Users, Activity, Calendar, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { SummaryData } from "@/types/summary";
+import { SummaryData, HistoryItem, FilterOptions, NotionSettings as NotionSettingsType } from "@/types/summary";
+import { SummaryFilters } from "@/components/SummaryFilters";
+import { NotionSettings } from "@/components/NotionSettings";
 
 // Helper: flatten an array of arrays
 const flatten = <T,>(arr: T[][]) => arr.reduce((a, b) => a.concat(b), []);
@@ -117,8 +119,18 @@ const ListCard = ({
 
 const Dashboard: React.FC = () => {
   const [summaries, setSummaries] = useState<{ summary: SummaryData }[]>([]);
+  const [filteredSummaries, setFilteredSummaries] = useState<{ summary: SummaryData }[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [filters, setFilters] = useState<FilterOptions>({
+    search: '',
+    tags: [],
+    rating: null
+  });
+  const [notionSettings, setNotionSettings] = useState<NotionSettingsType>({
+    isConnected: false,
+    autoSync: false
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -176,21 +188,64 @@ const Dashboard: React.FC = () => {
     return () => { cancelled = true };
   }, [toast]);
 
-  // Computed analytics
-  const total = summaries.length;
-  const allSkills = flatten(summaries.map(s => s.summary.keySkills));
-  const allRedFlags = flatten(summaries.map(s => s.summary.redFlags));
-  const allActions = flatten(summaries.map(s => s.summary.suggestedActions));
-  const ratings = summaries.map(s => s.summary.rating);
+  // Filter summaries based on current filters
+  useEffect(() => {
+    let filtered = summaries;
+
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filtered = filtered.filter(item =>
+        item.summary.candidateSummary.toLowerCase().includes(searchLower) ||
+        item.summary.keySkills.some(skill => skill.toLowerCase().includes(searchLower)) ||
+        item.summary.redFlags.some(flag => flag.toLowerCase().includes(searchLower)) ||
+        item.summary.suggestedActions.some(action => action.toLowerCase().includes(searchLower))
+      );
+    }
+
+    // Tag filter
+    if (filters.tags.length > 0) {
+      filtered = filtered.filter(item =>
+        item.summary.tags?.some(tag => filters.tags.includes(tag)) ||
+        false
+      );
+    }
+
+    // Rating filter
+    if (filters.rating !== null) {
+      filtered = filtered.filter(item =>
+        (item.summary.userRating || item.summary.rating) >= filters.rating!
+      );
+    }
+
+    setFilteredSummaries(filtered);
+  }, [summaries, filters]);
+
+  const handleClearFilters = () => {
+    setFilters({
+      search: '',
+      tags: [],
+      rating: null
+    });
+  };
+
+  // Computed analytics (use filtered summaries for display)
+  const total = filteredSummaries.length;
+  const allSkills = flatten(filteredSummaries.map(s => s.summary.keySkills));
+  const allRedFlags = flatten(filteredSummaries.map(s => s.summary.redFlags));
+  const allActions = flatten(filteredSummaries.map(s => s.summary.suggestedActions));
+  const ratings = filteredSummaries.map(s => s.summary.userRating || s.summary.rating);
   const avgRating = ratings.length > 0 ? (ratings.reduce((acc, n) => acc + n, 0) / ratings.length) : 0;
+  const allTags = flatten(filteredSummaries.map(s => s.summary.tags || []));
 
   const topSkills = topCount(allSkills, 5);
   const topRedFlags = topCount(allRedFlags, 5);
   const topActions = topCount(allActions, 5);
+  const topTags = topCount(allTags, 5);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 lg:p-8">
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
@@ -212,7 +267,7 @@ const Dashboard: React.FC = () => {
 
   if (errorMsg) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 lg:p-8">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-4xl font-bold text-gray-900 mb-8">Analytics Dashboard</h1>
           <Card className="border-red-200 bg-red-50">
@@ -230,26 +285,39 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-4 lg:p-8">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div>
             <h1 className="text-4xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
-            <p className="text-gray-600">Track your Slack summary insights and trends</p>
+            <p className="text-gray-600">Track your interview summary insights and trends</p>
           </div>
-          <div className="flex items-center space-x-2 text-sm text-gray-500">
-            <Calendar className="h-4 w-4" />
-            <span>Last updated: {new Date().toLocaleDateString()}</span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <NotionSettings 
+              settings={notionSettings}
+              onSettingsChange={setNotionSettings}
+            />
+            <div className="flex items-center space-x-2 text-sm text-gray-500">
+              <Calendar className="h-4 w-4" />
+              <span>Last updated: {new Date().toLocaleDateString()}</span>
+            </div>
           </div>
         </div>
+
+        {/* Search and Filters */}
+        <SummaryFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          onClearFilters={handleClearFilters}
+        />
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
             icon={<FileText className="h-5 w-5" />} 
             label="Total Summaries" 
-            value={total} 
+            value={`${total}${summaries.length !== total ? ` of ${summaries.length}` : ''}`}
             trend="up"
             trendValue="+12% this month"
             color="blue"
@@ -277,7 +345,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Analytics Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
           <ListCard 
             icon={<TrendingUp className="h-5 w-5" />} 
             label="Most Mentioned Skills" 
@@ -296,10 +364,16 @@ const Dashboard: React.FC = () => {
             items={topActions}
             color="purple"
           />
+          <ListCard 
+            icon={<Filter className="h-5 w-5" />} 
+            label="Popular Tags" 
+            items={topTags}
+            color="blue"
+          />
         </div>
 
         {/* Empty State */}
-        {total === 0 && (
+        {summaries.length === 0 && (
           <Card className="border-dashed border-2 border-gray-200">
             <CardContent className="p-12 text-center">
               <div className="text-gray-400 mb-4">
@@ -307,13 +381,34 @@ const Dashboard: React.FC = () => {
               </div>
               <h3 className="text-xl font-semibold text-gray-700 mb-2">No Data Yet</h3>
               <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-                Start summarizing your Slack conversations to see analytics and insights here.
+                Start summarizing your interview conversations to see analytics and insights here.
               </p>
               <button 
                 onClick={() => window.location.href = '/'}
                 className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors duration-200"
               >
                 Get Started
+              </button>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No Results State for Filters */}
+        {summaries.length > 0 && filteredSummaries.length === 0 && (
+          <Card className="border-dashed border-2 border-gray-200">
+            <CardContent className="p-8 text-center">
+              <div className="text-gray-400 mb-4">
+                <Filter className="h-12 w-12 mx-auto" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">No Matching Results</h3>
+              <p className="text-gray-500 mb-4">
+                No summaries match your current filters. Try adjusting your search criteria.
+              </p>
+              <button 
+                onClick={handleClearFilters}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors duration-200"
+              >
+                Clear Filters
               </button>
             </CardContent>
           </Card>
