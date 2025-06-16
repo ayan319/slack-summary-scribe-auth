@@ -1,229 +1,75 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Key, Bell, Shield, Database } from 'lucide-react';
-import { CRMSettings, CRMSettings as CRMSettingsComponent } from '@/components/CRMSettings';
-import { NotionSettings } from '@/components/NotionSettings';
-import { NotionSettings as NotionSettingsType } from '@/types/summary';
+import { ArrowLeft } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProfileSettings } from '@/components/settings/ProfileSettings';
+import { ApiKeysSettings } from '@/components/settings/ApiKeysSettings';
+import { IntegrationsSettings } from '@/components/settings/IntegrationsSettings';
+import { PreferencesSettings } from '@/components/settings/PreferencesSettings';
+import { BillingSettings } from '@/components/settings/BillingSettings';
+import { SecuritySettings } from '@/components/settings/SecuritySettings';
 
 const Settings = () => {
   const navigate = useNavigate();
-  const [crmSettings, setCrmSettings] = useState<CRMSettings>({
-    isConnected: false,
-    crmType: '',
-    autoSync: false,
-    fieldMappings: []
-  });
-
-  const [notionSettings, setNotionSettings] = useState<NotionSettingsType>({
-    isConnected: false,
-    autoSync: false
-  });
+  const [activeTab, setActiveTab] = useState('profile');
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-8 flex items-center space-x-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto p-4 md:p-8">
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="self-start"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </div>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-            <p className="text-gray-600">Manage your account and preferences</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Settings</h1>
+            <p className="text-gray-600">Manage your account, integrations, and preferences</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Sidebar Navigation */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardContent className="p-4">
-                <nav className="space-y-2">
-                  <Button variant="ghost" className="w-full justify-start">
-                    <User className="h-4 w-4 mr-2" />
-                    Profile
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Key className="h-4 w-4 mr-2" />
-                    API Keys
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Database className="h-4 w-4 mr-2" />
-                    Integrations
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Bell className="h-4 w-4 mr-2" />
-                    Notifications
-                  </Button>
-                  <Button variant="ghost" className="w-full justify-start">
-                    <Shield className="h-4 w-4 mr-2" />
-                    Security
-                  </Button>
-                </nav>
-              </CardContent>
-            </Card>
-          </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 mb-6">
+            <TabsTrigger value="profile" className="text-xs md:text-sm">Profile</TabsTrigger>
+            <TabsTrigger value="integrations" className="text-xs md:text-sm">Integrations</TabsTrigger>
+            <TabsTrigger value="preferences" className="text-xs md:text-sm">Preferences</TabsTrigger>
+            <TabsTrigger value="api-keys" className="text-xs md:text-sm">API Keys</TabsTrigger>
+            <TabsTrigger value="billing" className="text-xs md:text-sm">Billing</TabsTrigger>
+            <TabsTrigger value="security" className="text-xs md:text-sm">Security</TabsTrigger>
+          </TabsList>
 
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Profile Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
-                <CardDescription>
-                  Update your personal information and preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" placeholder="Enter your first name" />
-                  </div>
-                  <div>
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" placeholder="Enter your last name" />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" placeholder="Enter your email" />
-                </div>
-                <Button>Save Changes</Button>
-              </CardContent>
-            </Card>
+          <TabsContent value="profile" className="space-y-6">
+            <ProfileSettings />
+          </TabsContent>
 
-            {/* API Keys */}
-            <Card>
-              <CardHeader>
-                <CardTitle>API Keys & Tokens</CardTitle>
-                <CardDescription>
-                  Manage your Slack tokens and API keys
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="p-4 bg-blue-50 rounded-lg">
-                  <h4 className="font-medium text-blue-900 mb-2">Slack Integration Status</h4>
-                  <p className="text-blue-700 text-sm mb-3">
-                    Your Slack tokens are securely stored and managed automatically.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate('/slack-test')}
-                  >
-                    Test Slack Connection
-                  </Button>
-                </div>
-                <div>
-                  <Label htmlFor="apiKey">Custom API Key (Optional)</Label>
-                  <Input
-                    id="apiKey"
-                    type="password"
-                    placeholder="Enter your API key"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    This is for any additional integrations you might want to add.
-                  </p>
-                </div>
-                <Button variant="outline">Update API Keys</Button>
-              </CardContent>
-            </Card>
+          <TabsContent value="integrations" className="space-y-6">
+            <IntegrationsSettings />
+          </TabsContent>
 
-            {/* Integrations */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Integrations</CardTitle>
-                <CardDescription>
-                  Connect your external tools and platforms
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-medium mb-2">Notion Integration</h4>
-                    <NotionSettings 
-                      settings={notionSettings}
-                      onSettingsChange={setNotionSettings}
-                    />
-                  </div>
-                  
-                  <div>
-                    <h4 className="font-medium mb-2">CRM Integration</h4>
-                    <CRMSettingsComponent 
-                      settings={crmSettings}
-                      onSettingsUpdate={setCrmSettings}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="preferences" className="space-y-6">
+            <PreferencesSettings />
+          </TabsContent>
 
-            {/* Notification Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Notification Preferences</CardTitle>
-                <CardDescription>
-                  Choose how you want to be notified
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Email Notifications</h4>
-                    <p className="text-sm text-gray-500">Receive updates via email</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Configure
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Slack Notifications</h4>
-                    <p className="text-sm text-gray-500">Get notified in Slack</p>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    Configure
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+          <TabsContent value="api-keys" className="space-y-6">
+            <ApiKeysSettings />
+          </TabsContent>
 
-            {/* Security */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Security</CardTitle>
-                <CardDescription>
-                  Manage your account security
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="currentPassword">Current Password</Label>
-                  <Input id="currentPassword" type="password" />
-                </div>
-                <div>
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <Input id="newPassword" type="password" />
-                </div>
-                <div>
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input id="confirmPassword" type="password" />
-                </div>
-                <Button variant="outline">Change Password</Button>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          <TabsContent value="billing" className="space-y-6">
+            <BillingSettings />
+          </TabsContent>
+
+          <TabsContent value="security" className="space-y-6">
+            <SecuritySettings />
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
