@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ interface TranscriptHistoryProps {
   onClearHistory: () => void;
   isLoading?: boolean;
   onReload?: () => void;
+  onUpdateItem?: (item: HistoryItem) => void;
 }
 
 export const TranscriptHistory: React.FC<TranscriptHistoryProps> = ({
@@ -29,6 +29,7 @@ export const TranscriptHistory: React.FC<TranscriptHistoryProps> = ({
   onClearHistory,
   isLoading,
   onReload,
+  onUpdateItem,
 }) => {
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
