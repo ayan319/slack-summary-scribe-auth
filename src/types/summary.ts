@@ -10,7 +10,7 @@ export interface SummaryData {
 
 export interface HistoryItem {
   id: string;
-  timestamp: string;
+  timestamp: Date;
   transcript: string;
   summary: SummaryData;
   title: string;
@@ -21,14 +21,18 @@ export interface TranscriptInputProps {
   setTranscript: (transcript: string) => void;
   isLoading: boolean;
   onSummarize: () => void;
-  handleSummarize?: () => void;
+}
+
+export interface SummaryResultProps {
+  summary: SummaryData | null;
+  isLoading: boolean;
+  handleExport: (type: "slack" | "notion" | "crm") => void;
 }
 
 export interface TranscriptHistoryProps {
   history: HistoryItem[];
   onLoadItem: (item: HistoryItem) => void;
   onClearHistory: () => void;
-  clearHistory?: () => void;
   isLoading?: boolean;
   onReload?: () => void;
 }

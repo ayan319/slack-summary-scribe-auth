@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
@@ -25,7 +26,10 @@ export function useUserSummaries(session: Session | null) {
     if (error) {
       // Fallback to local data if error (e.g. RLS, expired session)
       const local = localStorage.getItem(LOCAL_KEY);
-      setHistory(local ? JSON.parse(local) : []);
+      setHistory(local ? JSON.parse(local).map((item: any) => ({
+        ...item,
+        timestamp: new Date(item.timestamp)
+      })) : []);
       return;
     }
 
@@ -34,7 +38,7 @@ export function useUserSummaries(session: Session | null) {
         id: item.id,
         timestamp: new Date(item.timestamp),
         transcript: item.transcript,
-        summary: item.summary,
+        summary: item.summary as SummaryData,
         title: item.title ?? `Interview Summary - ${new Date(item.timestamp).toLocaleDateString()}`
       }));
       setHistory(hydrated);
@@ -92,7 +96,10 @@ export function useUserSummaries(session: Session | null) {
       // Limit
       prev = [newItem, ...prev].slice(0, HISTORY_LIMIT);
       localStorage.setItem(LOCAL_KEY, JSON.stringify(prev));
-      setHistory(prev);
+      setHistory(prev.map((item: any) => ({
+        ...item,
+        timestamp: new Date(item.timestamp)
+      })));
     }
   };
 

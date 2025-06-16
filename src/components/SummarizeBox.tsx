@@ -102,7 +102,15 @@ const SummarizeBox = () => {
       const data = await response.text(); // Get raw text response
       const parsedSummary = parseSummaryResponse(data); // Parse it
       setSummary(parsedSummary);
-      addHistory({ transcript, summary: parsedSummary, timestamp: new Date().toISOString() });
+      
+      // Add title when saving to history
+      await addHistory({ 
+        transcript, 
+        summary: parsedSummary, 
+        timestamp: new Date(),
+        title: `Analysis - ${new Date().toLocaleDateString()}`
+      });
+      
       toast({
         title: "Summary Generated",
         description: "Your transcript has been summarized successfully.",
@@ -156,26 +164,27 @@ const SummarizeBox = () => {
             <TranscriptInput
               transcript={transcript}
               setTranscript={setTranscript}
-              handleSummarize={handleSummarize}
+              onSummarize={handleSummarize}
               isLoading={isLoading}
             />
             <SummaryResult
               summary={summary}
               isLoading={isLoading}
-              handleExport={handleExport} // Pass handleExport to SummaryResult
+              handleExport={handleExport}
             />
           </div>
         </TabsContent>
         <TabsContent value="history">
           <TranscriptHistory
             history={history}
-            clearHistory={clearHistory}
+            onClearHistory={clearHistory}
             isLoading={loading}
-            onSelectHistoryItem={(item) => {
+            onLoadItem={(item) => {
               setTranscript(item.transcript);
               setSummary(item.summary);
               setActiveTab("summarize");
             }}
+            onReload={reload}
           />
         </TabsContent>
         <TabsContent value="account">
