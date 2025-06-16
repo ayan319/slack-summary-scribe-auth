@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Home, BarChart3, TestTube, Settings, Slack } from 'lucide-react';
+import { Home, BarChart3, TestTube, Settings, Slack, Shield } from 'lucide-react';
 
 const Navigation = () => {
   const location = useLocation();
@@ -11,6 +12,7 @@ const Navigation = () => {
     { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
     { path: '/slack-test', label: 'Test Slack', icon: TestTube },
     { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/admin', label: 'Admin', icon: Shield },
   ];
 
   return (

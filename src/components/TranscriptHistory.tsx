@@ -11,6 +11,9 @@ import {
   Trash2,
   Eye,
   RefreshCcw,
+  Search,
+  Filter,
+  PlusCircle
 } from "lucide-react";
 import { HistoryItem } from "../types/summary";
 
@@ -21,6 +24,7 @@ interface TranscriptHistoryProps {
   isLoading?: boolean;
   onReload?: () => void;
   onUpdateItem?: (item: HistoryItem) => void;
+  isFiltered?: boolean;
 }
 
 export const TranscriptHistory: React.FC<TranscriptHistoryProps> = ({
@@ -30,6 +34,7 @@ export const TranscriptHistory: React.FC<TranscriptHistoryProps> = ({
   isLoading,
   onReload,
   onUpdateItem,
+  isFiltered = false,
 }) => {
   const formatDate = (date: Date) => {
     return new Intl.DateTimeFormat("en-US", {
@@ -57,29 +62,84 @@ export const TranscriptHistory: React.FC<TranscriptHistoryProps> = ({
     return (
       <Card className="text-center py-12">
         <CardContent>
-          <History className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            No Analysis History
-          </h3>
-          <p className="text-gray-600 mb-6">
-            Your analyzed interviews will appear here for easy reference
-          </p>
-          <Badge variant="outline" className="text-sm">
-            Start by analyzing your first interview transcript
-          </Badge>
-          {onReload && (
-            <div className="mt-6 flex justify-center">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onReload}
-                disabled={isLoading}
-                className="flex items-center gap-2"
-              >
-                <RefreshCcw className="h-4 w-4" />
-                Reload
-              </Button>
-            </div>
+          {isFiltered ? (
+            <>
+              <Search className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No Results Found
+              </h3>
+              <p className="text-gray-600 mb-6">
+                No summaries match your current filters. Try adjusting your search criteria or clearing filters.
+              </p>
+              <div className="flex justify-center gap-3">
+                <Button variant="outline" size="sm">
+                  <Filter className="h-4 w-4 mr-2" />
+                  Clear Filters
+                </Button>
+                {onReload && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onReload}
+                    disabled={isLoading}
+                  >
+                    <RefreshCcw className="h-4 w-4 mr-2" />
+                    Refresh
+                  </Button>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <History className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                No Analysis History
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Your analyzed interviews will appear here for easy reference and comparison
+              </p>
+              <div className="space-y-4">
+                <Badge variant="outline" className="text-sm px-4 py-2">
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Start by analyzing your first interview transcript
+                </Badge>
+                
+                <div className="border-t pt-4">
+                  <p className="text-sm text-gray-500 mb-3">Quick tips to get started:</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    <div className="bg-blue-50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2 font-medium text-blue-900 mb-1">
+                        <FileText className="h-4 w-4" />
+                        Paste Transcript
+                      </div>
+                      <p className="text-blue-700">Copy and paste your interview transcript into the text area above</p>
+                    </div>
+                    <div className="bg-green-50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2 font-medium text-green-900 mb-1">
+                        <Star className="h-4 w-4" />
+                        Get Analysis
+                      </div>
+                      <p className="text-green-700">Our AI will analyze skills, red flags, and provide actionable insights</p>
+                    </div>
+                  </div>
+                </div>
+
+                {onReload && (
+                  <div className="mt-6 flex justify-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onReload}
+                      disabled={isLoading}
+                      className="flex items-center gap-2"
+                    >
+                      <RefreshCcw className="h-4 w-4" />
+                      {isLoading ? "Loading..." : "Check for Updates"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

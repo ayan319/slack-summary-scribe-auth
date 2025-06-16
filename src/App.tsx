@@ -9,6 +9,7 @@ import AuthSuccess from "./pages/AuthSuccess";
 import SlackTest from "./pages/SlackTest";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/slack-test" element={<SlackTest />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/admin" element={<Admin />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

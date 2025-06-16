@@ -1,13 +1,22 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, User, Key, Bell, Shield } from 'lucide-react';
+import { ArrowLeft, User, Key, Bell, Shield, Database } from 'lucide-react';
+import { CRMSettings, CRMSettings as CRMSettingsComponent } from '@/components/CRMSettings';
+import { NotionSettings } from '@/components/NotionSettings';
 
 const Settings = () => {
   const navigate = useNavigate();
+  const [crmSettings, setCrmSettings] = useState<CRMSettings>({
+    isConnected: false,
+    crmType: '',
+    autoSync: false,
+    fieldMappings: []
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -40,6 +49,10 @@ const Settings = () => {
                   <Button variant="ghost" className="w-full justify-start">
                     <Key className="h-4 w-4 mr-2" />
                     API Keys
+                  </Button>
+                  <Button variant="ghost" className="w-full justify-start">
+                    <Database className="h-4 w-4 mr-2" />
+                    Integrations
                   </Button>
                   <Button variant="ghost" className="w-full justify-start">
                     <Bell className="h-4 w-4 mr-2" />
@@ -117,6 +130,32 @@ const Settings = () => {
                   </p>
                 </div>
                 <Button variant="outline">Update API Keys</Button>
+              </CardContent>
+            </Card>
+
+            {/* Integrations */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Integrations</CardTitle>
+                <CardDescription>
+                  Connect your external tools and platforms
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Notion Integration</h4>
+                    <NotionSettings />
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-medium mb-2">CRM Integration</h4>
+                    <CRMSettingsComponent 
+                      settings={crmSettings}
+                      onSettingsUpdate={setCrmSettings}
+                    />
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
