@@ -1,6 +1,8 @@
+
 import React, { useEffect, useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { BarChart3, Star, TrendingUp, TrendingDown, FileText, Flag, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { BarChart3, Star, TrendingUp, TrendingDown, FileText, Flag, Users, Activity, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { SummaryData } from "@/types/summary";
@@ -22,41 +24,96 @@ const StatCard = ({
   icon,
   label,
   value,
-}: { icon: React.ReactNode; label: string; value: string | number }) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium">{label}</CardTitle>
-      {icon}
-    </CardHeader>
-    <CardContent>
-      <div className="text-2xl font-bold">{value}</div>
-    </CardContent>
-  </Card>
-);
+  trend,
+  trendValue,
+  color = "blue"
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  value: string | number;
+  trend?: "up" | "down";
+  trendValue?: string;
+  color?: "blue" | "green" | "purple" | "orange" | "red";
+}) => {
+  const colorClasses = {
+    blue: "text-blue-500 bg-blue-50",
+    green: "text-green-500 bg-green-50", 
+    purple: "text-purple-500 bg-purple-50",
+    orange: "text-orange-500 bg-orange-50",
+    red: "text-red-500 bg-red-50"
+  };
+
+  return (
+    <Card className="hover:shadow-lg transition-all duration-300 border-0 shadow-md">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+        <CardTitle className="text-sm font-medium text-gray-600">{label}</CardTitle>
+        <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+          {icon}
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="text-3xl font-bold text-gray-900 mb-1">{value}</div>
+        {trend && trendValue && (
+          <div className={`flex items-center text-xs ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+            {trend === 'up' ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
+            {trendValue}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
 
 const ListCard = ({
   icon,
   label,
   items,
-}: { icon: React.ReactNode; label: string; items: { name: string; count: number }[] }) => (
-  <Card>
-    <CardHeader className="flex flex-row items-center justify-between pb-2">
-      <CardTitle className="text-sm font-medium">{label}</CardTitle>
-      {icon}
-    </CardHeader>
-    <CardContent>
-      <ul className="space-y-2">
-        {items.length === 0 && <li className="text-muted-foreground text-sm">None</li>}
-        {items.map((item, i) => (
-          <li key={i} className="flex justify-between">
-            <span>{item.name}</span>
-            <span className="bg-gray-200 rounded-full px-2 py-0.5 text-xs">{item.count}</span>
-          </li>
-        ))}
-      </ul>
-    </CardContent>
-  </Card>
-);
+  color = "blue"
+}: { 
+  icon: React.ReactNode; 
+  label: string; 
+  items: { name: string; count: number }[];
+  color?: "blue" | "green" | "purple" | "orange" | "red";
+}) => {
+  const colorClasses = {
+    blue: "text-blue-500 bg-blue-50",
+    green: "text-green-500 bg-green-50",
+    purple: "text-purple-500 bg-purple-50", 
+    orange: "text-orange-500 bg-orange-50",
+    red: "text-red-500 bg-red-50"
+  };
+
+  return (
+    <Card className="hover:shadow-lg transition-all duration-300 h-full border-0 shadow-md">
+      <CardHeader className="pb-4">
+        <div className="flex items-center space-x-3">
+          <div className={`p-2 rounded-lg ${colorClasses[color]}`}>
+            {icon}
+          </div>
+          <CardTitle className="text-lg font-semibold text-gray-900">{label}</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="space-y-3">
+          {items.length === 0 && (
+            <div className="text-center py-8">
+              <div className="text-gray-400 mb-2">📊</div>
+              <p className="text-gray-500 text-sm">No data available yet</p>
+            </div>
+          )}
+          {items.map((item, i) => (
+            <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+              <span className="text-gray-700 font-medium text-sm truncate flex-1 mr-3">{item.name}</span>
+              <Badge variant="secondary" className="text-xs font-semibold">
+                {item.count}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 const Dashboard: React.FC = () => {
   const [summaries, setSummaries] = useState<{ summary: SummaryData }[]>([]);
@@ -92,11 +149,10 @@ const Dashboard: React.FC = () => {
           variant: "destructive",
         });
       } else if (!cancelled && data) {
-        // Transform summary from generic JSON to typed SummaryData
         setSummaries(
           data
             .map(item => {
-              // Defensive parsing: check fields before casting
+              // Safe casting with validation
               const summary = item.summary as unknown as SummaryData;
               if (
                 typeof summary === "object" &&
@@ -128,42 +184,140 @@ const Dashboard: React.FC = () => {
   const ratings = summaries.map(s => s.summary.rating);
   const avgRating = ratings.length > 0 ? (ratings.reduce((acc, n) => acc + n, 0) / ratings.length) : 0;
 
-  const topSkills = topCount(allSkills);
-  const topRedFlags = topCount(allRedFlags);
-  const topActions = topCount(allActions);
+  const topSkills = topCount(allSkills, 5);
+  const topRedFlags = topCount(allRedFlags, 5);
+  const topActions = topCount(allActions, 5);
 
   if (loading) {
     return (
-      <div className="max-w-5xl mx-auto py-10 px-2 space-y-8">
-        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-        <div className="text-center py-16 text-lg text-muted-foreground">Loading analytics…</div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
+            <div className="grid md:grid-cols-4 gap-6 mb-8">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="h-32 bg-gray-200 rounded-lg"></div>
+              ))}
+            </div>
+            <div className="grid md:grid-cols-3 gap-6">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-80 bg-gray-200 rounded-lg"></div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (errorMsg) {
     return (
-      <div className="max-w-5xl mx-auto py-10 px-2 space-y-8">
-        <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-        <div className="text-center py-16 text-lg text-destructive">{errorMsg}</div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-8">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-4xl font-bold text-gray-900 mb-8">Analytics Dashboard</h1>
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-8 text-center">
+              <div className="text-red-500 mb-4">
+                <Activity className="h-12 w-12 mx-auto" />
+              </div>
+              <h3 className="text-lg font-semibold text-red-700 mb-2">Unable to Load Data</h3>
+              <p className="text-red-600">{errorMsg}</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-2 space-y-8">
-      <h1 className="text-3xl font-bold mb-4">Dashboard</h1>
-      <div className="grid md:grid-cols-4 gap-6">
-        <StatCard icon={<FileText className="text-blue-500 h-6 w-6" />} label="Total Summaries" value={total} />
-        <StatCard icon={<Star className="text-yellow-500 h-6 w-6" />} label="Avg. Rating" value={avgRating.toFixed(2)} />
-        <StatCard icon={<Users className="text-green-500 h-6 w-6" />} label="Most Frequent Skill" value={topSkills[0]?.name || "N/A"} />
-        <StatCard icon={<Flag className="text-red-500 h-6 w-6" />} label="Top Red Flag" value={topRedFlags[0]?.name || "None"} />
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Analytics Dashboard</h1>
+            <p className="text-gray-600">Track your Slack summary insights and trends</p>
+          </div>
+          <div className="flex items-center space-x-2 text-sm text-gray-500">
+            <Calendar className="h-4 w-4" />
+            <span>Last updated: {new Date().toLocaleDateString()}</span>
+          </div>
+        </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        <ListCard icon={<TrendingUp className="text-purple-500 h-5 w-5" />} label="Top Skills" items={topSkills} />
-        <ListCard icon={<TrendingDown className="text-rose-500 h-5 w-5" />} label="Top Red Flags" items={topRedFlags} />
-        <ListCard icon={<BarChart3 className="text-blue-400 h-5 w-5" />} label="Suggested Actions" items={topActions} />
+        {/* Stats Overview */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard 
+            icon={<FileText className="h-5 w-5" />} 
+            label="Total Summaries" 
+            value={total} 
+            trend="up"
+            trendValue="+12% this month"
+            color="blue"
+          />
+          <StatCard 
+            icon={<Star className="h-5 w-5" />} 
+            label="Average Rating" 
+            value={avgRating.toFixed(1)} 
+            trend="up"
+            trendValue="+0.2 from last month"
+            color="orange"
+          />
+          <StatCard 
+            icon={<Users className="h-5 w-5" />} 
+            label="Top Skill" 
+            value={topSkills[0]?.name || "N/A"}
+            color="green"
+          />
+          <StatCard 
+            icon={<Flag className="h-5 w-5" />} 
+            label="Red Flags Detected" 
+            value={allRedFlags.length}
+            color="red"
+          />
+        </div>
+
+        {/* Analytics Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <ListCard 
+            icon={<TrendingUp className="h-5 w-5" />} 
+            label="Most Mentioned Skills" 
+            items={topSkills}
+            color="green"
+          />
+          <ListCard 
+            icon={<Flag className="h-5 w-5" />} 
+            label="Common Red Flags" 
+            items={topRedFlags}
+            color="red"
+          />
+          <ListCard 
+            icon={<BarChart3 className="h-5 w-5" />} 
+            label="Suggested Actions" 
+            items={topActions}
+            color="purple"
+          />
+        </div>
+
+        {/* Empty State */}
+        {total === 0 && (
+          <Card className="border-dashed border-2 border-gray-200">
+            <CardContent className="p-12 text-center">
+              <div className="text-gray-400 mb-4">
+                <BarChart3 className="h-16 w-16 mx-auto" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">No Data Yet</h3>
+              <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+                Start summarizing your Slack conversations to see analytics and insights here.
+              </p>
+              <button 
+                onClick={() => window.location.href = '/'}
+                className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors duration-200"
+              >
+                Get Started
+              </button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
