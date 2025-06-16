@@ -32,6 +32,7 @@ export interface SummaryResultProps {
   isLoading: boolean;
   handleExport: (type: "slack" | "notion" | "crm") => void;
   transcript?: string;
+  onSummaryUpdate?: (summary: SummaryData) => void;
 }
 
 export interface TranscriptHistoryProps {
