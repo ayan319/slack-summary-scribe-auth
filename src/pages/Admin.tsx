@@ -122,25 +122,21 @@ const Admin = () => {
     return (
       <div className="min-h-screen bg-gray-50 p-8">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8 flex items-center space-x-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/dashboard')}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
+          <div className="w-full px-4 mt-4 mb-4">
+            <a href="/dashboard">
+              <button className="text-sm font-medium flex items-center gap-2 text-black dark:text-white">
+                ← Back to Dashboard
+              </button>
+            </a>
           </div>
 
-          <Card className="text-center py-12">
-            <CardContent>
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow mb-6">
+            <div className="text-center py-12">
               <Shield className="h-16 w-16 text-gray-400 mx-auto mb-4" />
               <h1 className="text-2xl font-bold text-gray-900 mb-4">Admin Access Required</h1>
               <p className="text-gray-600 mb-6">
                 This area is restricted to administrators only. Enable admin mode below for testing purposes.
               </p>
-              
               <div className="flex items-center justify-center gap-4 mb-6">
                 <Label htmlFor="adminToggle" className="text-sm font-medium">
                   Enable Admin Mode (Testing)
@@ -151,127 +147,116 @@ const Admin = () => {
                   onCheckedChange={setIsAdminMode}
                 />
               </div>
-
               <Badge variant="outline" className="text-sm">
                 <AlertTriangle className="h-3 w-3 mr-1" />
                 Demo mode only - Real admin authentication would be required
               </Badge>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate('/dashboard')}
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Dashboard
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-                <p className="text-gray-600">Manage all user summaries and interviews</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <Badge variant="default" className="flex items-center gap-1">
-                <Shield className="h-3 w-3" />
-                Admin Mode
-              </Badge>
-              <Switch
-                checked={isAdminMode}
-                onCheckedChange={setIsAdminMode}
-              />
+    <div className="w-full px-4 py-6 space-y-6">
+      {/* Section 1: Header */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <a href="/dashboard">
+              <button className="text-sm font-medium flex items-center gap-2 text-black dark:text-white">
+                ← Back to Dashboard
+              </button>
+            </a>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+              <p className="text-gray-600">Manage all user summaries and interviews</p>
             </div>
           </div>
+          <div className="flex items-center gap-4">
+            <Badge variant="default" className="flex items-center gap-1">
+              <Shield className="h-3 w-3" />
+              Admin Mode
+            </Badge>
+            <Switch
+              checked={isAdminMode}
+              onCheckedChange={setIsAdminMode}
+            />
+          </div>
         </div>
-
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Search summaries..."
-                  value={filters.search}
-                  onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                />
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Search by user..."
-                  value={filters.userSearch}
-                  onChange={(e) => setFilters(prev => ({ ...prev, userSearch: e.target.value }))}
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-gray-500" />
-                <Select 
-                  value={filters.rating?.toString() || 'all'} 
-                  onValueChange={(value) => setFilters(prev => ({ 
-                    ...prev, 
-                    rating: value === 'all' ? null : parseInt(value) 
-                  }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Rating" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Ratings</SelectItem>
-                    <SelectItem value="8">8+ Rating</SelectItem>
-                    <SelectItem value="6">6+ Rating</SelectItem>
-                    <SelectItem value="4">4+ Rating</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button
-                variant="outline"
-                onClick={() => setFilters({ search: '', tags: [], rating: null, userSearch: '' })}
+      </div>
+      {/* Section 2: Filters */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="flex items-center gap-2">
+            <Search className="h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Search summaries..."
+              value={filters.search}
+              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Search by user..."
+              value={filters.userSearch}
+              onChange={(e) => setFilters(prev => ({ ...prev, userSearch: e.target.value }))}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-gray-500" />
+            <Select 
+              value={filters.rating?.toString() || 'all'} 
+              onValueChange={(value) => setFilters(prev => ({ 
+                ...prev, 
+                rating: value === 'all' ? null : parseInt(value) 
+              }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Rating" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Ratings</SelectItem>
+                <SelectItem value="8">8+ Rating</SelectItem>
+                <SelectItem value="6">6+ Rating</SelectItem>
+                <SelectItem value="4">4+ Rating</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => setFilters({ search: '', tags: [], rating: null, userSearch: '' })}
+          >
+            Clear Filters
+          </Button>
+        </div>
+        {/* Tag filters */}
+        <div className="mt-4">
+          <p className="text-sm font-medium text-gray-700 mb-2">Filter by tags:</p>
+          <div className="flex flex-wrap gap-2">
+            {SUMMARY_TAGS.map((tag) => (
+              <Badge
+                key={tag}
+                variant={filters.tags.includes(tag) ? "default" : "outline"}
+                className="cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => setFilters(prev => ({
+                  ...prev,
+                  tags: prev.tags.includes(tag)
+                    ? prev.tags.filter(t => t !== tag)
+                    : [...prev.tags, tag]
+                }))}
               >
-                Clear Filters
-              </Button>
-            </div>
-
-            {/* Tag filters */}
-            <div className="mt-4">
-              <p className="text-sm font-medium text-gray-700 mb-2">Filter by tags:</p>
-              <div className="flex flex-wrap gap-2">
-                {SUMMARY_TAGS.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant={filters.tags.includes(tag) ? "default" : "outline"}
-                    className="cursor-pointer hover:bg-gray-100 transition-colors"
-                    onClick={() => setFilters(prev => ({
-                      ...prev,
-                      tags: prev.tags.includes(tag)
-                        ? prev.tags.filter(t => t !== tag)
-                        : [...prev.tags, tag]
-                    }))}
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Summary Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      </div>
+      {/* Section 3: Summary Statistics */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Total Summaries</CardTitle>
@@ -280,7 +265,6 @@ const Admin = () => {
               <div className="text-2xl font-bold">{summaries.length}</div>
             </CardContent>
           </Card>
-          
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Unique Users</CardTitle>
@@ -291,7 +275,6 @@ const Admin = () => {
               </div>
             </CardContent>
           </Card>
-          
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
@@ -305,7 +288,6 @@ const Admin = () => {
               </div>
             </CardContent>
           </Card>
-          
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">This Week</CardTitle>
@@ -321,97 +303,93 @@ const Admin = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Summaries List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              All User Summaries
-            </CardTitle>
-            <CardDescription>
-              {filteredSummaries.length} of {summaries.length} summaries
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {filteredSummaries.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No summaries found</h3>
-                <p className="text-gray-500">
-                  {summaries.length === 0 
-                    ? "No summaries have been created yet." 
-                    : "Try adjusting your filters to see more results."
-                  }
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {filteredSummaries.map((summary) => (
-                  <div key={summary.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h4 className="font-semibold text-lg">{summary.title}</h4>
-                        <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                          <span className="flex items-center gap-1">
-                            <Users className="h-3 w-3" />
-                            {summary.userName} ({summary.userEmail})
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {formatDate(summary.timestamp)}
-                          </span>
-                        </div>
+      </div>
+      {/* Section 4: Summaries List */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            All User Summaries
+          </CardTitle>
+          <CardDescription>
+            {filteredSummaries.length} of {summaries.length} summaries
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {filteredSummaries.length === 0 ? (
+            <div className="text-center py-8">
+              <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No summaries found</h3>
+              <p className="text-gray-500">
+                {summaries.length === 0 
+                  ? "No summaries have been created yet." 
+                  : "Try adjusting your filters to see more results."
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredSummaries.map((summary) => (
+                <div key={summary.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h4 className="font-semibold text-lg">{summary.title}</h4>
+                      <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
+                        <span className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          {summary.userName} ({summary.userEmail})
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(summary.timestamp)}
+                        </span>
                       </div>
-                      <Badge className={getRatingColor(summary.summary.rating)}>
-                        <Star className="h-3 w-3 mr-1" />
-                        {summary.summary.rating}/10
-                      </Badge>
                     </div>
-
-                    <p className="text-gray-600 mb-3 line-clamp-2">
-                      {summary.summary.candidateSummary}
-                    </p>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex flex-wrap gap-1">
-                        {summary.summary.tags?.slice(0, 3).map((tag, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {(summary.summary.tags?.length || 0) > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{(summary.summary.tags?.length || 0) - 3} more
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewSummary(summary)}
-                        >
-                          <Eye className="h-4 w-4 mr-1" />
-                          View
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteSummary(summary.id)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
-                      </div>
+                    <Badge className={getRatingColor(summary.summary.rating)}>
+                      <Star className="h-3 w-3 mr-1" />
+                      {summary.summary.rating}/10
+                    </Badge>
+                  </div>
+                  <p className="text-gray-600 mb-3 line-clamp-2">
+                    {summary.summary.candidateSummary}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap gap-1">
+                      {summary.summary.tags?.slice(0, 3).map((tag, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                      {(summary.summary.tags?.length || 0) > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{(summary.summary.tags?.length || 0) - 3} more
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewSummary(summary)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        View
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteSummary(summary.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
       </div>
     </div>
   );

@@ -10,66 +10,56 @@ import { IntegrationsSettings } from '@/components/settings/IntegrationsSettings
 import { PreferencesSettings } from '@/components/settings/PreferencesSettings';
 import { BillingSettings } from '@/components/settings/BillingSettings';
 import { SecuritySettings } from '@/components/settings/SecuritySettings';
+import { Link } from 'react-router-dom';
+import { Tab } from '@headlessui/react';
 
 const Settings = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-6xl mx-auto p-4 md:p-8">
-        <div className="mb-6 md:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-4">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/dashboard')}
-              className="self-start"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-            <p className="text-gray-600">Manage your account, integrations, and preferences</p>
-          </div>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 mb-6">
-            <TabsTrigger value="profile" className="text-xs md:text-sm">Profile</TabsTrigger>
-            <TabsTrigger value="integrations" className="text-xs md:text-sm">Integrations</TabsTrigger>
-            <TabsTrigger value="preferences" className="text-xs md:text-sm">Preferences</TabsTrigger>
-            <TabsTrigger value="api-keys" className="text-xs md:text-sm">API Keys</TabsTrigger>
-            <TabsTrigger value="billing" className="text-xs md:text-sm">Billing</TabsTrigger>
-            <TabsTrigger value="security" className="text-xs md:text-sm">Security</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="profile" className="space-y-6">
-            <ProfileSettings />
-          </TabsContent>
-
-          <TabsContent value="integrations" className="space-y-6">
-            <IntegrationsSettings />
-          </TabsContent>
-
-          <TabsContent value="preferences" className="space-y-6">
-            <PreferencesSettings />
-          </TabsContent>
-
-          <TabsContent value="api-keys" className="space-y-6">
-            <ApiKeysSettings />
-          </TabsContent>
-
-          <TabsContent value="billing" className="space-y-6">
-            <BillingSettings />
-          </TabsContent>
-
-          <TabsContent value="security" className="space-y-6">
-            <SecuritySettings />
-          </TabsContent>
-        </Tabs>
+    <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-black">
+      <div className="flex-1 flex flex-col items-center justify-center space-y-4 px-4 py-6">
+        <Tab.Group>
+          <Tab.List className="flex space-x-1 bg-gray-200 dark:bg-gray-800 p-1 rounded-xl">
+            <Tab className={({ selected }) =>
+              `w-full py-2 px-4 rounded-lg text-sm font-medium focus:outline-none transition
+              ${selected ? 'bg-white dark:bg-gray-900 shadow text-blue-600' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`
+            }>Profile</Tab>
+            <Tab className={({ selected }) =>
+              `w-full py-2 px-4 rounded-lg text-sm font-medium focus:outline-none transition
+              ${selected ? 'bg-white dark:bg-gray-900 shadow text-blue-600' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`
+            }>Billing</Tab>
+            <Tab className={({ selected }) =>
+              `w-full py-2 px-4 rounded-lg text-sm font-medium focus:outline-none transition
+              ${selected ? 'bg-white dark:bg-gray-900 shadow text-blue-600' : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`
+            }>Security</Tab>
+          </Tab.List>
+          <Tab.Panels className="mt-4 w-full max-w-xl mx-auto">
+            <Tab.Panel>
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-4">
+                <PreferencesSettings />
+              </div>
+            </Tab.Panel>
+            <Tab.Panel>
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-4">
+                <BillingSettings />
+              </div>
+            </Tab.Panel>
+            <Tab.Panel>
+              <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow space-y-4">
+                <SecuritySettings />
+              </div>
+            </Tab.Panel>
+          </Tab.Panels>
+        </Tab.Group>
+      </div>
+      <div className="sticky bottom-0 z-50 bg-white dark:bg-black p-4 w-full max-w-xl mx-auto">
+        <Link to="/">
+          <button className="w-full bg-gray-700 text-white rounded-lg py-2 shadow">
+            Back to Dashboard
+          </button>
+        </Link>
       </div>
     </div>
   );

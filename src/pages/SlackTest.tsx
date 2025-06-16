@@ -60,19 +60,16 @@ const SlackTest = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="mb-8 flex items-center space-x-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate('/dashboard')}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back to Dashboard
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Slack Integration Test</h1>
-            <p className="text-gray-600">Test your Slack OAuth connection and view team information</p>
-          </div>
+        <div className="w-full px-4 mt-4 mb-4">
+          <a href="/dashboard">
+            <button className="text-sm font-medium flex items-center gap-2 text-black dark:text-white">
+              ← Back to Dashboard
+            </button>
+          </a>
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Slack Integration Test</h1>
+          <p className="text-gray-600">Test your Slack OAuth connection and view team information</p>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
