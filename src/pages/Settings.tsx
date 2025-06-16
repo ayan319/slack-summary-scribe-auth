@@ -8,6 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, User, Key, Bell, Shield, Database } from 'lucide-react';
 import { CRMSettings, CRMSettings as CRMSettingsComponent } from '@/components/CRMSettings';
 import { NotionSettings } from '@/components/NotionSettings';
+import { NotionSettings as NotionSettingsType } from '@/types/summary';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -16,6 +17,11 @@ const Settings = () => {
     crmType: '',
     autoSync: false,
     fieldMappings: []
+  });
+
+  const [notionSettings, setNotionSettings] = useState<NotionSettingsType>({
+    isConnected: false,
+    autoSync: false
   });
 
   return (
@@ -145,7 +151,10 @@ const Settings = () => {
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium mb-2">Notion Integration</h4>
-                    <NotionSettings />
+                    <NotionSettings 
+                      settings={notionSettings}
+                      onSettingsChange={setNotionSettings}
+                    />
                   </div>
                   
                   <div>

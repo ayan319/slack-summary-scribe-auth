@@ -1,4 +1,3 @@
-
 export interface SummaryData {
   candidateSummary: string;
   keySkills: string[];
@@ -18,6 +17,9 @@ export interface HistoryItem {
   title: string;
   userRating?: number;
   tags?: string[];
+  // Admin-specific properties
+  userEmail?: string;
+  userName?: string;
 }
 
 export interface TranscriptInputProps {
