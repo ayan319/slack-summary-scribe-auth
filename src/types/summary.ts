@@ -5,6 +5,8 @@ export interface SummaryData {
   redFlags: string[];
   suggestedActions: string[];
   rating: number;
+  userRating?: number; // 1-5 stars
+  tags?: string[];
   handleExport?: (type: "slack" | "notion" | "crm") => void;
 }
 
@@ -14,6 +16,8 @@ export interface HistoryItem {
   transcript: string;
   summary: SummaryData;
   title: string;
+  userRating?: number;
+  tags?: string[];
 }
 
 export interface TranscriptInputProps {
@@ -27,6 +31,7 @@ export interface SummaryResultProps {
   summary: SummaryData | null;
   isLoading: boolean;
   handleExport: (type: "slack" | "notion" | "crm") => void;
+  transcript?: string;
 }
 
 export interface TranscriptHistoryProps {
@@ -35,4 +40,20 @@ export interface TranscriptHistoryProps {
   onClearHistory: () => void;
   isLoading?: boolean;
   onReload?: () => void;
+  onUpdateItem?: (item: HistoryItem) => void;
 }
+
+export const SUMMARY_TAGS = [
+  'Follow Up',
+  'Great Fit',
+  'Needs Improvement',
+  'Strong Technical',
+  'Cultural Fit',
+  'Leadership Potential',
+  'Entry Level',
+  'Senior Level',
+  'Reject',
+  'Move Forward'
+] as const;
+
+export type SummaryTag = typeof SUMMARY_TAGS[number];

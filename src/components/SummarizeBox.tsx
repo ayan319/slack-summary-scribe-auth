@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,7 +37,7 @@ const SummarizeBox = () => {
   }, []);
 
   // Supabase/Local summary sync
-  const { history, addHistory, clearHistory, loading, reload } = useUserSummaries(session);
+  const { history, addHistory, clearHistory, loading, reload, updateHistory } = useUserSummaries(session);
 
   // Update summary saving logic to insert into correct storage
   const parseSummaryResponse = (response: string): SummaryData => {
@@ -99,11 +100,10 @@ const SummarizeBox = () => {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to summarize");
       }
-      const data = await response.text(); // Get raw text response
-      const parsedSummary = parseSummaryResponse(data); // Parse it
+      const data = await response.text();
+      const parsedSummary = parseSummaryResponse(data);
       setSummary(parsedSummary);
       
-      // Add title when saving to history
       await addHistory({ 
         transcript, 
         summary: parsedSummary, 
@@ -127,40 +127,47 @@ const SummarizeBox = () => {
   };
 
   const handleExport = async (type: "slack" | "notion" | "crm") => {
-    // Simulate export with a mock endpoint or dummy delay
-    try {
-      // Replace with real endpoints as needed
-      await new Promise(res => setTimeout(res, 600));
-      toast({
-        title: "Export Successful",
-        description: `Summary exported to ${type.charAt(0).toUpperCase() + type.slice(1)}!`,
-      });
-    } catch {
-      toast({
-        title: "Export Failed",
-        description: `Could not export to ${type}.`,
-        variant: "destructive",
-      });
+    // This is now handled by the SummaryResult component's real export functions
+    console.log(`Export to ${type} will be handled by real API integration`);
+  };
+
+  const handleSummaryUpdate = async (updatedSummary: SummaryData) => {
+    setSummary(updatedSummary);
+    // Update in history if this summary exists
+    if (history.length > 0) {
+      const currentHistoryItem = history.find(item => 
+        item.transcript === transcript && 
+        item.summary.candidateSummary === updatedSummary.candidateSummary
+      );
+      if (currentHistoryItem && updateHistory) {
+        await updateHistory({
+          ...currentHistoryItem,
+          summary: updatedSummary
+        });
+      }
     }
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <h1 className="text-3xl font-bold text-center mb-8">Slack Summary Scribe</h1>
+    <div className="container mx-auto py-4 px-4 lg:py-8">
+      <h1 className="text-2xl lg:text-3xl font-bold text-center mb-6 lg:mb-8">Slack Summary Scribe</h1>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="summarize">
-            <FileText className="mr-2 h-4 w-4" /> Summarize
+        <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsTrigger value="summarize" className="text-sm lg:text-base">
+            <FileText className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" /> 
+            <span className="hidden sm:inline">Summarize</span>
           </TabsTrigger>
-          <TabsTrigger value="history">
-            <History className="mr-2 h-4 w-4" /> History
+          <TabsTrigger value="history" className="text-sm lg:text-base">
+            <History className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" /> 
+            <span className="hidden sm:inline">History</span>
           </TabsTrigger>
-          <TabsTrigger value="account">
-            <User className="mr-2 h-4 w-4" /> Account
+          <TabsTrigger value="account" className="text-sm lg:text-base">
+            <User className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" /> 
+            <span className="hidden sm:inline">Account</span>
           </TabsTrigger>
         </TabsList>
         <TabsContent value="summarize">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
             <TranscriptInput
               transcript={transcript}
               setTranscript={setTranscript}
@@ -171,6 +178,8 @@ const SummarizeBox = () => {
               summary={summary}
               isLoading={isLoading}
               handleExport={handleExport}
+              transcript={transcript}
+              onSummaryUpdate={handleSummaryUpdate}
             />
           </div>
         </TabsContent>
@@ -185,22 +194,23 @@ const SummarizeBox = () => {
               setActiveTab("summarize");
             }}
             onReload={reload}
+            onUpdateItem={updateHistory}
           />
         </TabsContent>
         <TabsContent value="account">
-          <div className="p-4 border rounded-md">
+          <div className="p-4 border rounded-md max-w-md mx-auto lg:max-w-lg">
             <h3 className="text-xl font-semibold mb-4">Account Information</h3>
             {session ? (
-              <div>
-                <p>Welcome, {session.user.email}!</p>
-                <Button onClick={() => supabase.auth.signOut()} className="mt-4">
+              <div className="space-y-4">
+                <p className="text-sm lg:text-base">Welcome, {session.user.email}!</p>
+                <Button onClick={() => supabase.auth.signOut()} className="w-full">
                   Sign Out
                 </Button>
               </div>
             ) : (
-              <div>
-                <p>You are not logged in.</p>
-                <Button onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })} className="mt-4">
+              <div className="space-y-4">
+                <p className="text-sm lg:text-base">You are not logged in.</p>
+                <Button onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })} className="w-full">
                   Login with GitHub
                 </Button>
               </div>

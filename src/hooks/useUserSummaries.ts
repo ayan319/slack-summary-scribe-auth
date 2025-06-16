@@ -39,7 +39,9 @@ export function useUserSummaries(session: Session | null) {
         timestamp: new Date(item.timestamp),
         transcript: item.transcript,
         summary: item.summary as SummaryData,
-        title: item.title ?? `Interview Summary - ${new Date(item.timestamp).toLocaleDateString()}`
+        title: item.title ?? `Interview Summary - ${new Date(item.timestamp).toLocaleDateString()}`,
+        userRating: item.summary?.userRating,
+        tags: item.summary?.tags || []
       }));
       setHistory(hydrated);
     }
@@ -72,8 +74,8 @@ export function useUserSummaries(session: Session | null) {
         .insert({
           user_id: session.user.id,
           transcript: entry.transcript,
-          summary: entry.summary as any, // Ensures TypeScript treats as JSON
-          timestamp: entry.timestamp.toISOString(), // convert Date to string
+          summary: entry.summary as any,
+          timestamp: entry.timestamp.toISOString(),
           title: entry.title
         })
         .select();
@@ -103,6 +105,38 @@ export function useUserSummaries(session: Session | null) {
     }
   };
 
+  // Update existing summary
+  const updateHistory = async (updatedItem: HistoryItem) => {
+    if (session?.user) {
+      const { error } = await supabase
+        .from("summaries")
+        .update({
+          summary: updatedItem.summary as any,
+          title: updatedItem.title
+        })
+        .eq("id", updatedItem.id);
+      if (error) throw error;
+      
+      setHistory(h => h.map(item => 
+        item.id === updatedItem.id ? updatedItem : item
+      ));
+    } else {
+      // Update localStorage
+      const local = localStorage.getItem(LOCAL_KEY);
+      if (local) {
+        const data = JSON.parse(local);
+        const updatedData = data.map((item: any) => 
+          item.id === updatedItem.id ? updatedItem : item
+        );
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(updatedData));
+        setHistory(updatedData.map((item: any) => ({
+          ...item,
+          timestamp: new Date(item.timestamp)
+        })));
+      }
+    }
+  };
+
   // Clear all summaries
   const clearHistory = async () => {
     if (session?.user) {
@@ -126,6 +160,7 @@ export function useUserSummaries(session: Session | null) {
     history,
     setHistory,
     addHistory,
+    updateHistory,
     clearHistory,
     loading,
     reload: () => {
