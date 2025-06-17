@@ -17,7 +17,7 @@ export function useUserSummaries(session: Session | null) {
     setLoading(true);
     const { data, error } = await supabase
       .from("summaries")
-      .select("id, transcript, summary, timestamp, title")
+      .select("id, transcript, summary, timestamp, title, message_id")
       .eq("user_id", user_id)
       .order("timestamp", { ascending: false })
       .limit(HISTORY_LIMIT);
@@ -68,7 +68,9 @@ export function useUserSummaries(session: Session | null) {
   // Add new summary
   const addHistory = async (entry: Omit<HistoryItem, "id">) => {
     if (session?.user) {
-      // Store in Supabase
+      // Store in Supabase - generate a message_id for regular summaries
+      const messageId = `summary_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
       const { data, error } = await supabase
         .from("summaries")
         .insert({
@@ -76,7 +78,8 @@ export function useUserSummaries(session: Session | null) {
           transcript: entry.transcript,
           summary: entry.summary as any,
           timestamp: entry.timestamp.toISOString(),
-          title: entry.title
+          title: entry.title,
+          message_id: messageId
         })
         .select();
       if (error) throw error;
