@@ -1,1 +1,52 @@
+
 project_id = "holuppwejzcqwrbdbgkf"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+port = 54324
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://holuppwejzcqwrbdbgkf.supabase.co/auth/v1/callback"]
+
+[db]
+port = 54322
+
+[edge_functions]
+enabled = true
+
+[functions.slack-message-handler]
+verify_jwt = false
+
+[functions.get-summary-by-message]
+verify_jwt = false
+
+[functions.slack-auth-url]
+verify_jwt = false
+
+[functions.slack-oauth-callback]
+verify_jwt = false
+
+[functions.slack-test]
+verify_jwt = false
+
+[functions.export-to-slack]
+verify_jwt = false
+
+[functions.export-to-notion]
+verify_jwt = false
+
+[functions.export-to-crm]
+verify_jwt = false
+
+[functions.notion-oauth-callback]
+verify_jwt = false
+
+[studio]
+enabled = true
+port = 54323

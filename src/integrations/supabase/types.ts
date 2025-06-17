@@ -45,6 +45,7 @@ export type Database = {
       summaries: {
         Row: {
           id: string
+          message_id: string
           summary: Json
           timestamp: string
           title: string | null
@@ -53,6 +54,7 @@ export type Database = {
         }
         Insert: {
           id?: string
+          message_id: string
           summary: Json
           timestamp?: string
           title?: string | null
@@ -61,6 +63,7 @@ export type Database = {
         }
         Update: {
           id?: string
+          message_id?: string
           summary?: Json
           timestamp?: string
           title?: string | null
