@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navigation from "./components/Navigation";
 import Index from "./pages/Index";
 import AuthSuccess from "./pages/AuthSuccess";
+import SlackOAuthCallback from "./pages/SlackOAuthCallback";
 import SlackTest from "./pages/SlackTest";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
@@ -25,6 +27,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth/success" element={<AuthSuccess />} />
+            <Route path="/auth/slack/callback" element={<SlackOAuthCallback />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/slack-test" element={<SlackTest />} />
             <Route path="/settings" element={<Settings />} />

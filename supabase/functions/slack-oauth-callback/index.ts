@@ -15,10 +15,20 @@ serve(async (req) => {
   }
 
   try {
-    const url = new URL(req.url)
-    const code = url.searchParams.get('code')
-    const state = url.searchParams.get('state')
-    const error = url.searchParams.get('error')
+    // Handle both URL params and body data
+    let code, state, error;
+    
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      code = url.searchParams.get('code');
+      state = url.searchParams.get('state');
+      error = url.searchParams.get('error');
+    } else {
+      const body = await req.json();
+      code = body.code;
+      state = body.state;
+      error = body.error;
+    }
 
     console.log('OAuth callback parameters:', {
       hasCode: !!code,
@@ -30,23 +40,23 @@ serve(async (req) => {
     if (error) {
       console.error('Slack OAuth error:', error);
       return new Response(
-        null,
+        JSON.stringify({ error: `Slack OAuth error: ${error}` }),
         {
-          status: 302,
-          headers: {
-            ...corsHeaders,
-            'Location': `${url.origin}/auth/error?error=${encodeURIComponent(error)}`,
-          },
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
       )
     }
 
     if (!code) {
       console.error('Authorization code not found');
-      return new Response('Authorization code not found', { 
-        status: 400,
-        headers: corsHeaders 
-      })
+      return new Response(
+        JSON.stringify({ error: 'Authorization code not found' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     // Get Slack credentials from environment
@@ -64,10 +74,13 @@ serve(async (req) => {
 
     if (!clientId || !clientSecret || !redirectUri) {
       console.error('Missing Slack configuration for token exchange');
-      return new Response('Missing Slack configuration', { 
-        status: 500,
-        headers: corsHeaders 
-      })
+      return new Response(
+        JSON.stringify({ error: 'Missing Slack configuration' }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     // Exchange authorization code for access token
@@ -95,10 +108,13 @@ serve(async (req) => {
 
     if (!tokenData.ok) {
       console.error('Slack OAuth token exchange error:', tokenData)
-      return new Response(`Failed to exchange token: ${tokenData.error}`, { 
-        status: 400,
-        headers: corsHeaders 
-      })
+      return new Response(
+        JSON.stringify({ error: `Failed to exchange token: ${tokenData.error}` }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
     // Initialize Supabase client
@@ -120,10 +136,7 @@ serve(async (req) => {
         team_name: tokenData.team.name,
         user_id: tokenData.authed_user.id,
         access_token: tokenData.access_token,
-        bot_user_id: tokenData.bot_user_id,
-        app_id: tokenData.app_id,
         scope: tokenData.scope,
-        token_type: tokenData.token_type,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, {
@@ -132,30 +145,42 @@ serve(async (req) => {
 
     if (dbError) {
       console.error('Database error:', dbError)
-      return new Response(`Failed to store token: ${dbError.message}`, { 
-        status: 500,
-        headers: corsHeaders 
-      })
+      return new Response(
+        JSON.stringify({ error: `Failed to store token: ${dbError.message}` }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
 
-    console.log('Token stored successfully, redirecting...');
+    console.log('Token stored successfully');
     
-    // Redirect back to frontend with success
-    const frontendUrl = `${url.origin}/auth/success?team=${encodeURIComponent(tokenData.team.name)}`
-    
-    return new Response(null, {
-      status: 302,
-      headers: {
-        ...corsHeaders,
-        'Location': frontendUrl,
-      },
-    })
+    // Return success data
+    return new Response(
+      JSON.stringify({
+        success: true,
+        team: {
+          id: tokenData.team.id,
+          name: tokenData.team.name
+        },
+        user: {
+          id: tokenData.authed_user.id
+        }
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
 
   } catch (error) {
     console.error('OAuth callback error:', error)
-    return new Response(`Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`, { 
-      status: 500,
-      headers: corsHeaders 
-    })
+    return new Response(
+      JSON.stringify({ error: `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}` }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
   }
 })
