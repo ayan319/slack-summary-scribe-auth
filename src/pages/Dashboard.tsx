@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { Slack, User, Calendar, Activity } from 'lucide-react';
 import SlackMessageSummary from '@/components/SlackMessageSummary';
+import SlackMessageList from '@/components/SlackMessageList';
 
 interface SlackToken {
   id: string;
@@ -222,7 +223,12 @@ const Dashboard = () => {
           </Card>
         </div>
 
-        {/* Add Slack Message Summary section */}
+        {/* Add Auto-Generated Summaries section */}
+        <div className="mb-8">
+          <SlackMessageList />
+        </div>
+
+        {/* Manual message lookup section */}
         <div className="mb-8">
           <SlackMessageSummary />
         </div>
