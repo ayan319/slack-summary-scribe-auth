@@ -1,10 +1,9 @@
-
-import React, { useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { Upload, Mic, Send, Loader2 } from 'lucide-react';
+import React, { useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { Upload, Mic, Send, Loader2 } from "lucide-react";
 
 interface TranscriptInputProps {
   transcript: string;
@@ -17,14 +16,14 @@ export const TranscriptInput: React.FC<TranscriptInputProps> = ({
   transcript,
   setTranscript,
   isLoading,
-  onSummarize
+  onSummarize,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.type === 'text/plain') {
+    if (file && file.type === "text/plain") {
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
@@ -115,7 +114,7 @@ export const TranscriptInput: React.FC<TranscriptInputProps> = ({
             ) : (
               <Send className="h-4 w-4" />
             )}
-            {isLoading ? 'Analyzing...' : 'Analyze Interview'}
+            {isLoading ? "Analyzing..." : "Analyze Interview"}
           </Button>
         </div>
       </CardContent>

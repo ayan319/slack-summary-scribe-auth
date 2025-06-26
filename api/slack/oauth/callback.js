@@ -14,7 +14,8 @@ export default async function handler(req, res) {
       code,
       client_id: process.env.SLACK_CLIENT_ID,
       client_secret: process.env.SLACK_CLIENT_SECRET,
-      redirect_uri: "https://your-vercel-url.vercel.app/api/slack/oauth/callback",
+      redirect_uri:
+        "https://your-vercel-url.vercel.app/api/slack/oauth/callback",
     }),
   });
 

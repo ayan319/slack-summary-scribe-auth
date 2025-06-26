@@ -14,24 +14,26 @@ export default async function handler(req, res) {
     const response = await fetch(process.env.OPENROUTER_API_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
         "HTTP-Referer": process.env.REFERER,
-        "X-Title": process.env.APP_NAME
+        "X-Title": process.env.APP_NAME,
       },
       body: JSON.stringify({
         model: process.env.MODEL_ID,
-        messages: [
-          { role: "system", content: prompt },
-        ]
-      })
+        messages: [{ role: "system", content: prompt }],
+      }),
     });
     const data = await response.json();
     if (!response.ok) {
-      return res.status(500).json({ error: data.error || "Failed to summarize transcript" });
+      return res
+        .status(500)
+        .json({ error: data.error || "Failed to summarize transcript" });
     }
     // Return the summary as JSON
-    return res.status(200).json({ summary: data.choices?.[0]?.message?.content || data });
+    return res
+      .status(200)
+      .json({ summary: data.choices?.[0]?.message?.content || data });
   } catch (error) {
     return res.status(500).json({ error: error.message || "Unknown error" });
   }

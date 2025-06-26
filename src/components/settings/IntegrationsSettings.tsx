@@ -1,25 +1,33 @@
-
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { CRMSettings, CRMSettings as CRMSettingsComponent } from '@/components/CRMSettings';
-import { NotionSettings } from '@/components/NotionSettings';
-import { NotionSettings as NotionSettingsType } from '@/types/summary';
-import { Slack, CheckCircle, X } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  CRMSettings,
+  CRMSettings as CRMSettingsComponent,
+} from "@/components/CRMSettings";
+import { NotionSettings } from "@/components/NotionSettings";
+import { NotionSettings as NotionSettingsType } from "@/types/summary";
+import { Slack, CheckCircle, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export const IntegrationsSettings = () => {
   const [crmSettings, setCrmSettings] = useState<CRMSettings>({
     isConnected: false,
-    crmType: '',
+    crmType: "",
     autoSync: false,
-    fieldMappings: []
+    fieldMappings: [],
   });
 
   const [notionSettings, setNotionSettings] = useState<NotionSettingsType>({
     isConnected: false,
-    autoSync: false
+    autoSync: false,
   });
 
   const { toast } = useToast();
@@ -51,7 +59,10 @@ export const IntegrationsSettings = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
+              <Badge
+                variant="secondary"
+                className="bg-green-100 text-green-800"
+              >
                 <CheckCircle className="h-3 w-3 mr-1" />
                 Connected
               </Badge>
@@ -77,9 +88,19 @@ export const IntegrationsSettings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <NotionSettings 
-            settings={notionSettings}
-            onSettingsChange={setNotionSettings}
+          <NotionSettings
+            onSave={(settings) =>
+              setNotionSettings({
+                ...notionSettings,
+                accessToken: settings.apiKey,
+                databaseId: settings.databaseId,
+                isConnected: true,
+              })
+            }
+            initialSettings={{
+              apiKey: notionSettings.accessToken || "",
+              databaseId: notionSettings.databaseId || "",
+            }}
           />
         </CardContent>
       </Card>
@@ -93,7 +114,7 @@ export const IntegrationsSettings = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CRMSettingsComponent 
+          <CRMSettingsComponent
             settings={crmSettings}
             onSettingsUpdate={setCrmSettings}
           />

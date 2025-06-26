@@ -1,14 +1,19 @@
-
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 
 export const ApiKeysSettings = () => {
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -23,20 +28,20 @@ export const ApiKeysSettings = () => {
     <Card>
       <CardHeader>
         <CardTitle>API Keys & Tokens</CardTitle>
-        <CardDescription>
-          Manage your Slack tokens and API keys
-        </CardDescription>
+        <CardDescription>Manage your Slack tokens and API keys</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">Slack Integration Status</h4>
+          <h4 className="font-medium text-blue-900 mb-2">
+            Slack Integration Status
+          </h4>
           <p className="text-blue-700 text-sm mb-3">
             Your Slack tokens are securely stored and managed automatically.
           </p>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate('/slack-test')}
+            onClick={() => navigate("/slack-test")}
           >
             Test Slack Connection
           </Button>

@@ -1,10 +1,16 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, XCircle, TestTube } from 'lucide-react';
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { ArrowLeft, CheckCircle, XCircle, TestTube } from "lucide-react";
 
 const SlackTest = () => {
   const [loading, setLoading] = useState(false);
@@ -15,18 +21,18 @@ const SlackTest = () => {
   const testSlackConnection = async () => {
     setLoading(true);
     setResult(null);
-    
+
     try {
-      console.log('Testing Slack connection...');
-      const { data, error } = await supabase.functions.invoke('slack-test', {
-        body: { action: 'test_auth' }
+      console.log("Testing Slack connection...");
+      const { data, error } = await supabase.functions.invoke("slack-test", {
+        body: { action: "test_auth" },
       });
 
       if (error) throw error;
 
-      console.log('Test result:', data);
+      console.log("Test result:", data);
       setResult(data);
-      
+
       if (data.success) {
         toast({
           title: "Success!",
@@ -40,11 +46,14 @@ const SlackTest = () => {
         });
       }
     } catch (error) {
-      console.error('Test failed:', error);
+      console.error("Test failed:", error);
       const errorResult = {
         success: false,
-        error: error instanceof Error ? error.message : "Failed to test Slack connection",
-        suggestion: "Please check your Slack integration and try again"
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to test Slack connection",
+        suggestion: "Please check your Slack integration and try again",
       };
       setResult(errorResult);
       toast({
@@ -68,10 +77,14 @@ const SlackTest = () => {
           </a>
         </div>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Slack Integration Test</h1>
-          <p className="text-gray-600">Test your Slack OAuth connection and view team information</p>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Slack Integration Test
+          </h1>
+          <p className="text-gray-600">
+            Test your Slack OAuth connection and view team information
+          </p>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
             <CardHeader>
@@ -80,21 +93,24 @@ const SlackTest = () => {
                 <span>Test Slack API Connection</span>
               </CardTitle>
               <CardDescription>
-                This will verify if your Slack OAuth tokens are working properly and display your team information.
+                This will verify if your Slack OAuth tokens are working properly
+                and display your team information.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button 
+              <Button
                 onClick={testSlackConnection}
                 disabled={loading}
                 className="w-full mb-4"
                 size="lg"
               >
-                {loading ? 'Testing Connection...' : 'Test Slack Connection'}
+                {loading ? "Testing Connection..." : "Test Slack Connection"}
               </Button>
-              
+
               <div className="text-sm text-gray-600 space-y-2">
-                <p><strong>What this test does:</strong></p>
+                <p>
+                  <strong>What this test does:</strong>
+                </p>
                 <ul className="list-disc list-inside space-y-1 ml-4">
                   <li>Checks if Slack tokens are stored in the database</li>
                   <li>Validates tokens with Slack's API</li>
@@ -132,29 +148,54 @@ const SlackTest = () => {
                   {result.success ? (
                     <div className="space-y-4">
                       <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                        <h4 className="font-semibold text-green-800 mb-2">✅ Connection Successful!</h4>
+                        <h4 className="font-semibold text-green-800 mb-2">
+                          ✅ Connection Successful!
+                        </h4>
                         <p className="text-green-700">{result.message}</p>
                       </div>
-                      
+
                       {result.team && (
                         <div className="space-y-3">
-                          <h4 className="font-semibold text-gray-900">Team Information:</h4>
+                          <h4 className="font-semibold text-gray-900">
+                            Team Information:
+                          </h4>
                           <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                            <div><strong>Team Name:</strong> {result.team.name}</div>
-                            <div><strong>Team ID:</strong> {result.team.id}</div>
-                            <div><strong>User:</strong> {result.team.user}</div>
-                            <div><strong>User ID:</strong> {result.team.user_id}</div>
+                            <div>
+                              <strong>Team Name:</strong> {result.team.name}
+                            </div>
+                            <div>
+                              <strong>Team ID:</strong> {result.team.id}
+                            </div>
+                            <div>
+                              <strong>User:</strong> {result.team.user}
+                            </div>
+                            <div>
+                              <strong>User ID:</strong> {result.team.user_id}
+                            </div>
                           </div>
                         </div>
                       )}
-                      
+
                       {result.token_info && (
                         <div className="space-y-3">
-                          <h4 className="font-semibold text-gray-900">Token Information:</h4>
+                          <h4 className="font-semibold text-gray-900">
+                            Token Information:
+                          </h4>
                           <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                            <div><strong>Workspace:</strong> {result.token_info.team_name}</div>
-                            <div><strong>Scopes:</strong> {result.token_info.scopes}</div>
-                            <div><strong>Connected:</strong> {new Date(result.token_info.created_at).toLocaleString()}</div>
+                            <div>
+                              <strong>Workspace:</strong>{" "}
+                              {result.token_info.team_name}
+                            </div>
+                            <div>
+                              <strong>Scopes:</strong>{" "}
+                              {result.token_info.scopes}
+                            </div>
+                            <div>
+                              <strong>Connected:</strong>{" "}
+                              {new Date(
+                                result.token_info.created_at,
+                              ).toLocaleString()}
+                            </div>
                           </div>
                         </div>
                       )}
@@ -162,7 +203,9 @@ const SlackTest = () => {
                   ) : (
                     <div className="space-y-4">
                       <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <h4 className="font-semibold text-red-800 mb-2">❌ Connection Failed</h4>
+                        <h4 className="font-semibold text-red-800 mb-2">
+                          ❌ Connection Failed
+                        </h4>
                         <p className="text-red-700">{result.error}</p>
                         {result.suggestion && (
                           <p className="text-red-600 mt-2 text-sm">
@@ -170,16 +213,24 @@ const SlackTest = () => {
                           </p>
                         )}
                       </div>
-                      
+
                       <div className="space-y-2">
-                        <h4 className="font-semibold text-gray-900">What to do next:</h4>
+                        <h4 className="font-semibold text-gray-900">
+                          What to do next:
+                        </h4>
                         <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                          <li>Make sure you've connected your Slack workspace</li>
-                          <li>Try disconnecting and reconnecting your workspace</li>
-                          <li>Check if your Slack app permissions are correct</li>
+                          <li>
+                            Make sure you've connected your Slack workspace
+                          </li>
+                          <li>
+                            Try disconnecting and reconnecting your workspace
+                          </li>
+                          <li>
+                            Check if your Slack app permissions are correct
+                          </li>
                         </ul>
-                        <Button 
-                          onClick={() => navigate('/')}
+                        <Button
+                          onClick={() => navigate("/")}
                           variant="outline"
                           size="sm"
                           className="mt-3"

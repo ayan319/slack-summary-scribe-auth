@@ -1,19 +1,26 @@
-
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Home, BarChart3, TestTube, Settings, Slack, Shield, Menu } from 'lucide-react';
+import React, { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import {
+  Home,
+  BarChart3,
+  TestTube,
+  Settings,
+  Slack,
+  Shield,
+  Menu,
+} from "lucide-react";
 
 const Navigation = () => {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = [
-    { path: '/', label: 'Home', icon: Home },
-    { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-    { path: '/slack-test', label: 'Test Slack', icon: TestTube },
-    { path: '/settings', label: 'Settings', icon: Settings },
-    { path: '/admin', label: 'Admin', icon: Shield },
+    { path: "/", label: "Home", icon: Home },
+    { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
+    { path: "/slack-test", label: "Test Slack", icon: TestTube },
+    { path: "/settings", label: "Settings", icon: Settings },
+    { path: "/admin", label: "Admin", icon: Shield },
   ];
 
   return (
@@ -23,7 +30,9 @@ const Navigation = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center space-x-2">
               <Slack className="h-8 w-8 text-purple-600" />
-              <span className="text-xl font-bold text-gray-900">Slack Summarizer</span>
+              <span className="text-xl font-bold text-gray-900">
+                Slack Summarizer
+              </span>
             </Link>
           </div>
           {/* Desktop Nav */}
@@ -72,7 +81,10 @@ const Navigation = () => {
                   className="w-full justify-start"
                   onClick={() => setMobileOpen(false)}
                 >
-                  <Link to={item.path} className="flex items-center space-x-2 w-full">
+                  <Link
+                    to={item.path}
+                    className="flex items-center space-x-2 w-full"
+                  >
                     <Icon className="h-4 w-4" />
                     <span>{item.label}</span>
                   </Link>

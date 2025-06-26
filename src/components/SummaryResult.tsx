@@ -1,21 +1,21 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Brain, 
-  Star, 
-  AlertTriangle, 
-  CheckCircle, 
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import {
+  Brain,
+  Star,
+  AlertTriangle,
+  CheckCircle,
   Loader2,
   Slack,
   FileText,
-  Database
-} from 'lucide-react';
-import { SummaryData } from '@/types/summary';
-import { SummaryRatingTags } from './SummaryRatingTags';
-import { useExportIntegrations } from '@/hooks/useExportIntegrations';
+  Database,
+} from "lucide-react";
+import { SummaryData } from "@/types/summary";
+import { SummaryRatingTags } from "./SummaryRatingTags";
+import { useExportIntegrations } from "@/hooks/useExportIntegrations";
 
 interface SummaryResultProps {
   summary: SummaryData | null;
@@ -29,23 +29,24 @@ export const SummaryResult: React.FC<SummaryResultProps> = ({
   summary,
   isLoading,
   handleExport,
-  transcript = '',
-  onSummaryUpdate
+  transcript = "",
+  onSummaryUpdate,
 }) => {
-  const { exportToSlack, exportToNotion, exportToCRM, isExporting } = useExportIntegrations();
+  const { exportToSlack, exportToNotion, exportToCRM, isExporting } =
+    useExportIntegrations();
 
   const handleRealExport = async (type: "slack" | "notion" | "crm") => {
     if (!summary) return;
 
     try {
       switch (type) {
-        case 'slack':
+        case "slack":
           await exportToSlack(summary, transcript);
           break;
-        case 'notion':
+        case "notion":
           await exportToNotion(summary, transcript);
           break;
-        case 'crm':
+        case "crm":
           await exportToCRM(summary, transcript);
           break;
       }
@@ -167,7 +168,10 @@ export const SummaryResult: React.FC<SummaryResultProps> = ({
             </h4>
             <ul className="space-y-2">
               {summary.redFlags.map((flag, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
+                <li
+                  key={index}
+                  className="flex items-start gap-2 text-sm text-gray-700"
+                >
                   <span className="w-1.5 h-1.5 bg-red-500 rounded-full mt-2 flex-shrink-0"></span>
                   {flag}
                 </li>
@@ -185,7 +189,10 @@ export const SummaryResult: React.FC<SummaryResultProps> = ({
             </h4>
             <ul className="space-y-2">
               {summary.suggestedActions.map((action, index) => (
-                <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
+                <li
+                  key={index}
+                  className="flex items-start gap-2 text-sm text-gray-700"
+                >
                   <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
                   {action}
                 </li>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,12 +23,16 @@ const SummarizeBox = () => {
   // Auth: Listen for user login/logout and keep session up-to-date
   useEffect(() => {
     // 1. Setup listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, sess) => {
       setSession(sess);
     });
 
     // 2. THEN check for session
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => setSession(session));
 
     return () => {
       subscription.unsubscribe();
@@ -37,32 +40,58 @@ const SummarizeBox = () => {
   }, []);
 
   // Supabase/Local summary sync
-  const { history, addHistory, clearHistory, loading, reload, updateHistory } = useUserSummaries(session);
+  const { history, addHistory, clearHistory, loading, reload, updateHistory } =
+    useUserSummaries(session);
 
   // Update summary saving logic to insert into correct storage
   const parseSummaryResponse = (response: string): SummaryData => {
     // Parse the backend response string into structured data
-    const sections = response.split('\n\n');
-    
-    let candidateSummary = '';
+    const sections = response.split("\n\n");
+
+    let candidateSummary = "";
     let keySkills: string[] = [];
     let redFlags: string[] = [];
     let suggestedActions: string[] = [];
     let rating = 0;
 
-    sections.forEach(section => {
-      if (section.includes('Candidate Summary:') || section.includes('Summary:')) {
-        candidateSummary = section.replace(/.*Summary:\s*/, '').trim();
-      } else if (section.includes('Key Skills:') || section.includes('Skills:')) {
-        const skillsText = section.replace(/.*Skills:\s*/, '').trim();
-        keySkills = skillsText.split('\n').map(skill => skill.replace(/^-\s*/, '').trim()).filter(Boolean);
-      } else if (section.includes('Red Flags:') || section.includes('Concerns:')) {
-        const flagsText = section.replace(/.*(?:Red Flags|Concerns):\s*/, '').trim();
-        redFlags = flagsText.split('\n').map(flag => flag.replace(/^-\s*/, '').trim()).filter(Boolean);
-      } else if (section.includes('Suggested Actions:') || section.includes('Recommendations:')) {
-        const actionsText = section.replace(/.*(?:Suggested Actions|Recommendations):\s*/, '').trim();
-        suggestedActions = actionsText.split('\n').map(action => action.replace(/^-\s*/, '').trim()).filter(Boolean);
-      } else if (section.includes('Rating:') || section.includes('Score:')) {
+    sections.forEach((section) => {
+      if (
+        section.includes("Candidate Summary:") ||
+        section.includes("Summary:")
+      ) {
+        candidateSummary = section.replace(/.*Summary:\s*/, "").trim();
+      } else if (
+        section.includes("Key Skills:") ||
+        section.includes("Skills:")
+      ) {
+        const skillsText = section.replace(/.*Skills:\s*/, "").trim();
+        keySkills = skillsText
+          .split("\n")
+          .map((skill) => skill.replace(/^-\s*/, "").trim())
+          .filter(Boolean);
+      } else if (
+        section.includes("Red Flags:") ||
+        section.includes("Concerns:")
+      ) {
+        const flagsText = section
+          .replace(/.*(?:Red Flags|Concerns):\s*/, "")
+          .trim();
+        redFlags = flagsText
+          .split("\n")
+          .map((flag) => flag.replace(/^-\s*/, "").trim())
+          .filter(Boolean);
+      } else if (
+        section.includes("Suggested Actions:") ||
+        section.includes("Recommendations:")
+      ) {
+        const actionsText = section
+          .replace(/.*(?:Suggested Actions|Recommendations):\s*/, "")
+          .trim();
+        suggestedActions = actionsText
+          .split("\n")
+          .map((action) => action.replace(/^-\s*/, "").trim())
+          .filter(Boolean);
+      } else if (section.includes("Rating:") || section.includes("Score:")) {
         const ratingMatch = section.match(/(\d+(?:\.\d+)?)/);
         if (ratingMatch) {
           rating = parseFloat(ratingMatch[1]);
@@ -71,11 +100,14 @@ const SummarizeBox = () => {
     });
 
     return {
-      candidateSummary: candidateSummary || 'No summary available',
-      keySkills: keySkills.length > 0 ? keySkills : ['No skills identified'],
-      redFlags: redFlags.length > 0 ? redFlags : ['No red flags identified'],
-      suggestedActions: suggestedActions.length > 0 ? suggestedActions : ['No specific actions suggested'],
-      rating: rating || 0
+      candidateSummary: candidateSummary || "No summary available",
+      keySkills: keySkills.length > 0 ? keySkills : ["No skills identified"],
+      redFlags: redFlags.length > 0 ? redFlags : ["No red flags identified"],
+      suggestedActions:
+        suggestedActions.length > 0
+          ? suggestedActions
+          : ["No specific actions suggested"],
+      rating: rating || 0,
     };
   };
 
@@ -103,22 +135,23 @@ const SummarizeBox = () => {
       const data = await response.text();
       const parsedSummary = parseSummaryResponse(data);
       setSummary(parsedSummary);
-      
-      await addHistory({ 
-        transcript, 
-        summary: parsedSummary, 
+
+      await addHistory({
+        transcript,
+        summary: parsedSummary,
         timestamp: new Date(),
-        title: `Analysis - ${new Date().toLocaleDateString()}`
+        title: `Analysis - ${new Date().toLocaleDateString()}`,
       });
-      
+
       toast({
         title: "Summary Generated",
         description: "Your transcript has been summarized successfully.",
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "An unknown error occurred during summarization.";
       toast({
         title: "Summarization Failed",
-        description: err.message || "An unknown error occurred during summarization.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -135,14 +168,15 @@ const SummarizeBox = () => {
     setSummary(updatedSummary);
     // Update in history if this summary exists
     if (history.length > 0) {
-      const currentHistoryItem = history.find(item => 
-        item.transcript === transcript && 
-        item.summary.candidateSummary === updatedSummary.candidateSummary
+      const currentHistoryItem = history.find(
+        (item) =>
+          item.transcript === transcript &&
+          item.summary.candidateSummary === updatedSummary.candidateSummary,
       );
       if (currentHistoryItem && updateHistory) {
         await updateHistory({
           ...currentHistoryItem,
-          summary: updatedSummary
+          summary: updatedSummary,
         });
       }
     }
@@ -150,19 +184,21 @@ const SummarizeBox = () => {
 
   return (
     <div className="container mx-auto py-4 px-4 lg:py-8">
-      <h1 className="text-2xl lg:text-3xl font-bold text-center mb-6 lg:mb-8">Slack Summary Scribe</h1>
+      <h1 className="text-2xl lg:text-3xl font-bold text-center mb-6 lg:mb-8">
+        Slack Summary Scribe
+      </h1>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-6">
           <TabsTrigger value="summarize" className="text-sm lg:text-base">
-            <FileText className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" /> 
+            <FileText className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
             <span className="hidden sm:inline">Summarize</span>
           </TabsTrigger>
           <TabsTrigger value="history" className="text-sm lg:text-base">
-            <History className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" /> 
+            <History className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
             <span className="hidden sm:inline">History</span>
           </TabsTrigger>
           <TabsTrigger value="account" className="text-sm lg:text-base">
-            <User className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" /> 
+            <User className="mr-1 lg:mr-2 h-3 w-3 lg:h-4 lg:w-4" />
             <span className="hidden sm:inline">Account</span>
           </TabsTrigger>
         </TabsList>
@@ -202,15 +238,25 @@ const SummarizeBox = () => {
             <h3 className="text-xl font-semibold mb-4">Account Information</h3>
             {session ? (
               <div className="space-y-4">
-                <p className="text-sm lg:text-base">Welcome, {session.user.email}!</p>
-                <Button onClick={() => supabase.auth.signOut()} className="w-full">
+                <p className="text-sm lg:text-base">
+                  Welcome, {session.user.email}!
+                </p>
+                <Button
+                  onClick={() => supabase.auth.signOut()}
+                  className="w-full"
+                >
                   Sign Out
                 </Button>
               </div>
             ) : (
               <div className="space-y-4">
                 <p className="text-sm lg:text-base">You are not logged in.</p>
-                <Button onClick={() => supabase.auth.signInWithOAuth({ provider: 'github' })} className="w-full">
+                <Button
+                  onClick={() =>
+                    supabase.auth.signInWithOAuth({ provider: "github" })
+                  }
+                  className="w-full"
+                >
                   Login with GitHub
                 </Button>
               </div>

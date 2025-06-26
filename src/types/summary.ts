@@ -17,6 +17,7 @@ export interface HistoryItem {
   title: string;
   userRating?: number;
   tags?: string[];
+  messageId?: string;
   // Admin-specific properties
   userEmail?: string;
   userName?: string;
@@ -47,19 +48,19 @@ export interface TranscriptHistoryProps {
 }
 
 export const SUMMARY_TAGS = [
-  'Follow Up',
-  'Great Fit',
-  'Needs Improvement',
-  'Strong Technical',
-  'Cultural Fit',
-  'Leadership Potential',
-  'Entry Level',
-  'Senior Level',
-  'Reject',
-  'Move Forward'
+  "Follow Up",
+  "Great Fit",
+  "Needs Improvement",
+  "Strong Technical",
+  "Cultural Fit",
+  "Leadership Potential",
+  "Entry Level",
+  "Senior Level",
+  "Reject",
+  "Move Forward",
 ] as const;
 
-export type SummaryTag = typeof SUMMARY_TAGS[number];
+export type SummaryTag = (typeof SUMMARY_TAGS)[number];
 
 export interface FilterOptions {
   search: string;

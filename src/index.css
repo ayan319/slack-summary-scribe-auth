@@ -1,7 +1,101 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222.2 84% 4.9%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 222.2 84% 4.9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 94.1%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.3s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+}
 
 @layer base {
   :root {
@@ -153,7 +247,9 @@
 
   /* Hover effects */
   .hover-lift {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    transition:
+      transform 0.2s ease-in-out,
+      box-shadow 0.2s ease-in-out;
   }
 
   .hover-lift:hover {
@@ -291,7 +387,8 @@
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
   }
   50% {
@@ -342,13 +439,16 @@ html {
   }
 
   /* Better button sizing for touch */
-  button, .button {
+  button,
+  .button {
     min-height: 44px;
     min-width: 44px;
   }
 
   /* Improve form elements on mobile */
-  input, textarea, select {
+  input,
+  textarea,
+  select {
     font-size: 16px; /* Prevents zoom on iOS */
   }
 
@@ -401,7 +501,7 @@ html {
   .card {
     border: 2px solid;
   }
-  
+
   .button {
     border: 2px solid;
   }
@@ -425,7 +525,6 @@ select:focus {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
 }
-
 
 @media (max-width: 414px) {
   .max-w-7xl,
@@ -454,11 +553,13 @@ select:focus {
   .h-16 {
     height: 3rem;
   }
-  .h-8, .w-8 {
+  .h-8,
+  .w-8 {
     height: 2rem;
     width: 2rem;
   }
-  .h-4, .w-4 {
+  .h-4,
+  .w-4 {
     height: 1.1rem;
     width: 1.1rem;
   }
@@ -485,7 +586,9 @@ select:focus {
   .rounded-full {
     border-radius: 9999px;
   }
-  .btn, .Button, button {
+  .btn,
+  .Button,
+  button {
     font-size: 0.95rem;
     padding: 0.5rem 1rem;
   }
@@ -511,11 +614,13 @@ select:focus {
   .h-16 {
     height: 2.5rem;
   }
-  .h-8, .w-8 {
+  .h-8,
+  .w-8 {
     height: 1.5rem;
     width: 1.5rem;
   }
-  .h-4, .w-4 {
+  .h-4,
+  .w-4 {
     height: 0.95rem;
     width: 0.95rem;
   }
@@ -539,7 +644,9 @@ select:focus {
   .rounded-lg {
     border-radius: 0.5rem;
   }
-  .btn, .Button, button {
+  .btn,
+  .Button,
+  button {
     font-size: 0.85rem;
     padding: 0.4rem 0.75rem;
   }

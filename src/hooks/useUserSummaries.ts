@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Session } from "@supabase/supabase-js";
@@ -26,10 +25,14 @@ export function useUserSummaries(session: Session | null) {
     if (error) {
       // Fallback to local data if error (e.g. RLS, expired session)
       const local = localStorage.getItem(LOCAL_KEY);
-      setHistory(local ? JSON.parse(local).map((item: any) => ({
-        ...item,
-        timestamp: new Date(item.timestamp)
-      })) : []);
+      setHistory(
+        local
+          ? JSON.parse(local).map((item: any) => ({
+              ...item,
+              timestamp: new Date(item.timestamp),
+            }))
+          : [],
+      );
       return;
     }
 
@@ -39,9 +42,11 @@ export function useUserSummaries(session: Session | null) {
         timestamp: new Date(item.timestamp),
         transcript: item.transcript,
         summary: item.summary as SummaryData,
-        title: item.title ?? `Interview Summary - ${new Date(item.timestamp).toLocaleDateString()}`,
+        title:
+          item.title ??
+          `Interview Summary - ${new Date(item.timestamp).toLocaleDateString()}`,
         userRating: item.summary?.userRating,
-        tags: item.summary?.tags || []
+        tags: item.summary?.tags || [],
       }));
       setHistory(hydrated);
     }
@@ -50,10 +55,14 @@ export function useUserSummaries(session: Session | null) {
   // Helper: Load from localStorage
   const loadFromLocal = useCallback(() => {
     const local = localStorage.getItem(LOCAL_KEY);
-    setHistory(local ? JSON.parse(local).map((item: any) => ({
-      ...item,
-      timestamp: new Date(item.timestamp)
-    })) : []);
+    setHistory(
+      local
+        ? JSON.parse(local).map((item: any) => ({
+            ...item,
+            timestamp: new Date(item.timestamp),
+          }))
+        : [],
+    );
   }, []);
 
   // Initial load
@@ -76,7 +85,7 @@ export function useUserSummaries(session: Session | null) {
           transcript: entry.transcript,
           summary: entry.summary as any,
           timestamp: entry.timestamp.toISOString(),
-          title: entry.title
+          title: entry.title,
         })
         .select();
       if (error) throw error;
@@ -85,7 +94,7 @@ export function useUserSummaries(session: Session | null) {
           id: data[0].id,
           ...entry,
         };
-        setHistory(h => [newItem, ...h].slice(0, HISTORY_LIMIT));
+        setHistory((h) => [newItem, ...h].slice(0, HISTORY_LIMIT));
       }
     } else {
       // Local only
@@ -98,10 +107,12 @@ export function useUserSummaries(session: Session | null) {
       // Limit
       prev = [newItem, ...prev].slice(0, HISTORY_LIMIT);
       localStorage.setItem(LOCAL_KEY, JSON.stringify(prev));
-      setHistory(prev.map((item: any) => ({
-        ...item,
-        timestamp: new Date(item.timestamp)
-      })));
+      setHistory(
+        prev.map((item: any) => ({
+          ...item,
+          timestamp: new Date(item.timestamp),
+        })),
+      );
     }
   };
 
@@ -112,27 +123,29 @@ export function useUserSummaries(session: Session | null) {
         .from("summaries")
         .update({
           summary: updatedItem.summary as any,
-          title: updatedItem.title
+          title: updatedItem.title,
         })
         .eq("id", updatedItem.id);
       if (error) throw error;
-      
-      setHistory(h => h.map(item => 
-        item.id === updatedItem.id ? updatedItem : item
-      ));
+
+      setHistory((h) =>
+        h.map((item) => (item.id === updatedItem.id ? updatedItem : item)),
+      );
     } else {
       // Update localStorage
       const local = localStorage.getItem(LOCAL_KEY);
       if (local) {
         const data = JSON.parse(local);
-        const updatedData = data.map((item: any) => 
-          item.id === updatedItem.id ? updatedItem : item
+        const updatedData = data.map((item: any) =>
+          item.id === updatedItem.id ? updatedItem : item,
         );
         localStorage.setItem(LOCAL_KEY, JSON.stringify(updatedData));
-        setHistory(updatedData.map((item: any) => ({
-          ...item,
-          timestamp: new Date(item.timestamp)
-        })));
+        setHistory(
+          updatedData.map((item: any) => ({
+            ...item,
+            timestamp: new Date(item.timestamp),
+          })),
+        );
       }
     }
   };
@@ -140,7 +153,7 @@ export function useUserSummaries(session: Session | null) {
   // Clear all summaries
   const clearHistory = async () => {
     if (session?.user) {
-      const ids = history.map(h => h.id);
+      const ids = history.map((h) => h.id);
       if (ids.length > 0) {
         const { error } = await supabase
           .from("summaries")
@@ -166,6 +179,6 @@ export function useUserSummaries(session: Session | null) {
     reload: () => {
       if (session?.user) loadFromSupabase(session.user.id);
       else loadFromLocal();
-    }
+    },
   };
 }

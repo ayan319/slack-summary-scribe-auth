@@ -13,7 +13,7 @@ import {
   RefreshCcw,
   Search,
   Filter,
-  PlusCircle
+  PlusCircle,
 } from "lucide-react";
 import { HistoryItem } from "../types/summary";
 
@@ -69,7 +69,8 @@ export const TranscriptHistory: React.FC<TranscriptHistoryProps> = ({
                 No Results Found
               </h3>
               <p className="text-gray-600 mb-6">
-                No summaries match your current filters. Try adjusting your search criteria or clearing filters.
+                No summaries match your current filters. Try adjusting your
+                search criteria or clearing filters.
               </p>
               <div className="flex justify-center gap-3">
                 <Button variant="outline" size="sm">
@@ -96,30 +97,39 @@ export const TranscriptHistory: React.FC<TranscriptHistoryProps> = ({
                 No Analysis History
               </h3>
               <p className="text-gray-600 mb-6">
-                Your analyzed interviews will appear here for easy reference and comparison
+                Your analyzed interviews will appear here for easy reference and
+                comparison
               </p>
               <div className="space-y-4">
                 <Badge variant="outline" className="text-sm px-4 py-2">
                   <PlusCircle className="h-4 w-4 mr-2" />
                   Start by analyzing your first interview transcript
                 </Badge>
-                
+
                 <div className="border-t pt-4">
-                  <p className="text-sm text-gray-500 mb-3">Quick tips to get started:</p>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Quick tips to get started:
+                  </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                     <div className="bg-blue-50 p-3 rounded-lg">
                       <div className="flex items-center gap-2 font-medium text-blue-900 mb-1">
                         <FileText className="h-4 w-4" />
                         Paste Transcript
                       </div>
-                      <p className="text-blue-700">Copy and paste your interview transcript into the text area above</p>
+                      <p className="text-blue-700">
+                        Copy and paste your interview transcript into the text
+                        area above
+                      </p>
                     </div>
                     <div className="bg-green-50 p-3 rounded-lg">
                       <div className="flex items-center gap-2 font-medium text-green-900 mb-1">
                         <Star className="h-4 w-4" />
                         Get Analysis
                       </div>
-                      <p className="text-green-700">Our AI will analyze skills, red flags, and provide actionable insights</p>
+                      <p className="text-green-700">
+                        Our AI will analyze skills, red flags, and provide
+                        actionable insights
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -152,9 +162,7 @@ export const TranscriptHistory: React.FC<TranscriptHistoryProps> = ({
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-2">
           <History className="h-6 w-6 text-blue-600" />
-          <h2 className="text-2xl font-bold text-gray-900">
-            Analysis History
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900">Analysis History</h2>
           <Badge variant="secondary">{history.length} interviews</Badge>
         </div>
         {history.length > 0 && (

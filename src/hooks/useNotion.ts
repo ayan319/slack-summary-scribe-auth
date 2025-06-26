@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 
@@ -18,14 +17,20 @@ export function useNotionOAuth() {
   // Step 2: Complete OAuth (called on callback page)
   const completeOAuth = async (code: string) => {
     // Call edge function to exchange code for token
-    const res = await fetch(`/functions/v1/notion-oauth-callback?code=${encodeURIComponent(code)}`);
+    const res = await fetch(
+      `/functions/v1/notion-oauth-callback?code=${encodeURIComponent(code)}`,
+    );
     const data = await res.json();
     if (data.access_token) {
       setToken(data.access_token);
       localStorage.setItem("notion_access_token", data.access_token);
       return data.access_token;
     } else {
-      toast({ title: "Notion Authorization failed", variant: "destructive", description: data.error || "Unable to access Notion" });
+      toast({
+        title: "Notion Authorization failed",
+        variant: "destructive",
+        description: data.error || "Unable to access Notion",
+      });
     }
   };
 
@@ -53,7 +58,13 @@ export async function fetchNotionDatabases(token: string) {
   return data.results || [];
 }
 
-export async function createNotionPage(token: string, databaseId: string, title: string, summaryData: any, transcript: string) {
+export async function createNotionPage(
+  token: string,
+  databaseId: string,
+  title: string,
+  summaryData: any,
+  transcript: string,
+) {
   // Map summary fields into Notion page properties (assume database accepts simple text)
   const page = {
     parent: { database_id: databaseId },
@@ -71,15 +82,17 @@ export async function createNotionPage(token: string, databaseId: string, title:
         rich_text: [{ text: { content: summaryData.redFlags.join(", ") } }],
       },
       "Suggested Actions": {
-        rich_text: [{ text: { content: summaryData.suggestedActions.join(", ") } }],
+        rich_text: [
+          { text: { content: summaryData.suggestedActions.join(", ") } },
+        ],
       },
       Rating: {
         number: summaryData.rating,
       },
       Transcript: {
         rich_text: [{ text: { content: transcript } }],
-      }
-    }
+      },
+    },
   };
   const res = await fetch("https://api.notion.com/v1/pages", {
     method: "POST",

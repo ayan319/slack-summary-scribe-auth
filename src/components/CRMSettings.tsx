@@ -1,15 +1,33 @@
-
-import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Settings, Database, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import { Settings, Database, CheckCircle, AlertCircle } from "lucide-react";
 
 export interface CRMMapping {
   summaryField: string;
@@ -30,31 +48,69 @@ interface CRMSettingsProps {
 }
 
 const CRM_OPTIONS = [
-  { value: 'hubspot', label: 'HubSpot', description: 'CRM & Marketing Platform' },
-  { value: 'salesforce', label: 'Salesforce', description: 'Enterprise CRM Solution' },
-  { value: 'pipedrive', label: 'Pipedrive', description: 'Sales Pipeline Management' },
-  { value: 'zoho', label: 'Zoho CRM', description: 'All-in-one CRM Suite' },
+  {
+    value: "hubspot",
+    label: "HubSpot",
+    description: "CRM & Marketing Platform",
+  },
+  {
+    value: "salesforce",
+    label: "Salesforce",
+    description: "Enterprise CRM Solution",
+  },
+  {
+    value: "pipedrive",
+    label: "Pipedrive",
+    description: "Sales Pipeline Management",
+  },
+  { value: "zoho", label: "Zoho CRM", description: "All-in-one CRM Suite" },
 ];
 
 const SUMMARY_FIELDS = [
-  'candidateSummary',
-  'keySkills',
-  'redFlags',
-  'suggestedActions',
-  'rating',
-  'tags'
+  "candidateSummary",
+  "keySkills",
+  "redFlags",
+  "suggestedActions",
+  "rating",
+  "tags",
 ];
 
 const CRM_FIELDS = {
-  hubspot: ['contact_name', 'email', 'phone', 'company', 'job_title', 'notes', 'lead_status'],
-  salesforce: ['FirstName', 'LastName', 'Email', 'Phone', 'Account', 'Title', 'Description', 'LeadStatus'],
-  pipedrive: ['name', 'email', 'phone', 'org_name', 'title', 'notes', 'status'],
-  zoho: ['First_Name', 'Last_Name', 'Email', 'Phone', 'Account_Name', 'Title', 'Description', 'Lead_Status']
+  hubspot: [
+    "contact_name",
+    "email",
+    "phone",
+    "company",
+    "job_title",
+    "notes",
+    "lead_status",
+  ],
+  salesforce: [
+    "FirstName",
+    "LastName",
+    "Email",
+    "Phone",
+    "Account",
+    "Title",
+    "Description",
+    "LeadStatus",
+  ],
+  pipedrive: ["name", "email", "phone", "org_name", "title", "notes", "status"],
+  zoho: [
+    "First_Name",
+    "Last_Name",
+    "Email",
+    "Phone",
+    "Account_Name",
+    "Title",
+    "Description",
+    "Lead_Status",
+  ],
 };
 
 export const CRMSettings: React.FC<CRMSettingsProps> = ({
   settings,
-  onSettingsUpdate
+  onSettingsUpdate,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [localSettings, setLocalSettings] = useState<CRMSettings>(settings);
@@ -71,10 +127,10 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
 
   const handleConnect = () => {
     if (localSettings.crmType && localSettings.apiKey) {
-      setLocalSettings(prev => ({ ...prev, isConnected: true }));
+      setLocalSettings((prev) => ({ ...prev, isConnected: true }));
       toast({
         title: "CRM Connected",
-        description: `Successfully connected to ${CRM_OPTIONS.find(crm => crm.value === localSettings.crmType)?.label}`,
+        description: `Successfully connected to ${CRM_OPTIONS.find((crm) => crm.value === localSettings.crmType)?.label}`,
       });
     } else {
       toast({
@@ -86,12 +142,12 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
   };
 
   const handleDisconnect = () => {
-    setLocalSettings(prev => ({ 
-      ...prev, 
-      isConnected: false, 
-      apiKey: '',
+    setLocalSettings((prev) => ({
+      ...prev,
+      isConnected: false,
+      apiKey: "",
       autoSync: false,
-      fieldMappings: []
+      fieldMappings: [],
     }));
     toast({
       title: "CRM Disconnected",
@@ -100,33 +156,41 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
   };
 
   const addFieldMapping = () => {
-    setLocalSettings(prev => ({
+    setLocalSettings((prev) => ({
       ...prev,
       fieldMappings: [
         ...prev.fieldMappings,
-        { summaryField: '', crmField: '' }
-      ]
+        { summaryField: "", crmField: "" },
+      ],
     }));
   };
 
-  const updateFieldMapping = (index: number, field: 'summaryField' | 'crmField', value: string) => {
-    setLocalSettings(prev => ({
+  const updateFieldMapping = (
+    index: number,
+    field: "summaryField" | "crmField",
+    value: string,
+  ) => {
+    setLocalSettings((prev) => ({
       ...prev,
       fieldMappings: prev.fieldMappings.map((mapping, i) =>
-        i === index ? { ...mapping, [field]: value } : mapping
-      )
+        i === index ? { ...mapping, [field]: value } : mapping,
+      ),
     }));
   };
 
   const removeFieldMapping = (index: number) => {
-    setLocalSettings(prev => ({
+    setLocalSettings((prev) => ({
       ...prev,
-      fieldMappings: prev.fieldMappings.filter((_, i) => i !== index)
+      fieldMappings: prev.fieldMappings.filter((_, i) => i !== index),
     }));
   };
 
-  const selectedCRM = CRM_OPTIONS.find(crm => crm.value === localSettings.crmType);
-  const availableCRMFields = localSettings.crmType ? CRM_FIELDS[localSettings.crmType as keyof typeof CRM_FIELDS] : [];
+  const selectedCRM = CRM_OPTIONS.find(
+    (crm) => crm.value === localSettings.crmType,
+  );
+  const availableCRMFields = localSettings.crmType
+    ? CRM_FIELDS[localSettings.crmType as keyof typeof CRM_FIELDS]
+    : [];
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -149,7 +213,8 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
             CRM Integration Settings
           </DialogTitle>
           <DialogDescription>
-            Connect your CRM to automatically sync interview summaries and candidate data.
+            Connect your CRM to automatically sync interview summaries and
+            candidate data.
           </DialogDescription>
         </DialogHeader>
 
@@ -167,11 +232,13 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
                 <Label htmlFor="crmType">CRM Platform</Label>
                 <Select
                   value={localSettings.crmType}
-                  onValueChange={(value) => setLocalSettings(prev => ({ 
-                    ...prev, 
-                    crmType: value,
-                    fieldMappings: []
-                  }))}
+                  onValueChange={(value) =>
+                    setLocalSettings((prev) => ({
+                      ...prev,
+                      crmType: value,
+                      fieldMappings: [],
+                    }))
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a CRM platform" />
@@ -181,7 +248,9 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
                       <SelectItem key={crm.value} value={crm.value}>
                         <div className="flex flex-col">
                           <span className="font-medium">{crm.label}</span>
-                          <span className="text-sm text-gray-500">{crm.description}</span>
+                          <span className="text-sm text-gray-500">
+                            {crm.description}
+                          </span>
                         </div>
                       </SelectItem>
                     ))}
@@ -196,8 +265,13 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
                     id="apiKey"
                     type="password"
                     placeholder="Enter your CRM API key"
-                    value={localSettings.apiKey || ''}
-                    onChange={(e) => setLocalSettings(prev => ({ ...prev, apiKey: e.target.value }))}
+                    value={localSettings.apiKey || ""}
+                    onChange={(e) =>
+                      setLocalSettings((prev) => ({
+                        ...prev,
+                        apiKey: e.target.value,
+                      }))
+                    }
                   />
                   <p className="text-sm text-gray-500 mt-1">
                     Your API key will be encrypted and stored securely.
@@ -220,8 +294,12 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
                       <>
                         <CheckCircle className="h-5 w-5 text-green-600" />
                         <div>
-                          <p className="font-medium">Connected to {selectedCRM?.label}</p>
-                          <p className="text-sm text-gray-500">Ready to sync data</p>
+                          <p className="font-medium">
+                            Connected to {selectedCRM?.label}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Ready to sync data
+                          </p>
                         </div>
                       </>
                     ) : (
@@ -229,7 +307,9 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
                         <AlertCircle className="h-5 w-5 text-orange-600" />
                         <div>
                           <p className="font-medium">Not Connected</p>
-                          <p className="text-sm text-gray-500">Click connect to test your credentials</p>
+                          <p className="text-sm text-gray-500">
+                            Click connect to test your credentials
+                          </p>
                         </div>
                       </>
                     )}
@@ -240,7 +320,10 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
                         Disconnect
                       </Button>
                     ) : (
-                      <Button onClick={handleConnect} disabled={!localSettings.apiKey}>
+                      <Button
+                        onClick={handleConnect}
+                        disabled={!localSettings.apiKey}
+                      >
                         Connect
                       </Button>
                     )}
@@ -272,8 +355,11 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
                   <Switch
                     id="autoSync"
                     checked={localSettings.autoSync}
-                    onCheckedChange={(checked) => 
-                      setLocalSettings(prev => ({ ...prev, autoSync: checked }))
+                    onCheckedChange={(checked) =>
+                      setLocalSettings((prev) => ({
+                        ...prev,
+                        autoSync: checked,
+                      }))
                     }
                   />
                 </div>
@@ -292,12 +378,17 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
               </CardHeader>
               <CardContent className="space-y-4">
                 {localSettings.fieldMappings.map((mapping, index) => (
-                  <div key={index} className="flex items-center gap-4 p-4 border rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-center gap-4 p-4 border rounded-lg"
+                  >
                     <div className="flex-1">
                       <Label>Summary Field</Label>
                       <Select
                         value={mapping.summaryField}
-                        onValueChange={(value) => updateFieldMapping(index, 'summaryField', value)}
+                        onValueChange={(value) =>
+                          updateFieldMapping(index, "summaryField", value)
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select summary field" />
@@ -315,7 +406,9 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
                       <Label>CRM Field</Label>
                       <Select
                         value={mapping.crmField}
-                        onValueChange={(value) => updateFieldMapping(index, 'crmField', value)}
+                        onValueChange={(value) =>
+                          updateFieldMapping(index, "crmField", value)
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select CRM field" />
@@ -354,9 +447,7 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
             <Button variant="outline" onClick={() => setIsOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>
-              Save Settings
-            </Button>
+            <Button onClick={handleSave}>Save Settings</Button>
           </div>
         </div>
       </DialogContent>

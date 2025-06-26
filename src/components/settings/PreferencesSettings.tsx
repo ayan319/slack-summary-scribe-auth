@@ -1,14 +1,25 @@
+import React, { useState } from "react";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectItem,
+  SelectTrigger,
+  SelectContent,
+  SelectValue,
+} from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-
-export const PreferencesSettings = () => {
-  const [defaultExportMode, setDefaultExportMode] = useState('slack');
+export const PreferencesSettings: React.FC = () => {
+  const [defaultExportMode, setDefaultExportMode] = useState("slack");
   const [autoSyncEnabled, setAutoSyncEnabled] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [slackNotifications, setSlackNotifications] = useState(true);
@@ -46,7 +57,6 @@ export const PreferencesSettings = () => {
               </SelectContent>
             </Select>
           </div>
-          
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <Label htmlFor="autoSync">Auto-sync new summaries</Label>
@@ -62,7 +72,6 @@ export const PreferencesSettings = () => {
           </div>
         </CardContent>
       </Card>
-
       {/* Notification Preferences */}
       <Card>
         <CardHeader>
@@ -83,7 +92,6 @@ export const PreferencesSettings = () => {
               onCheckedChange={setEmailNotifications}
             />
           </div>
-          
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <Label htmlFor="slackNotifications">Slack Notifications</Label>
@@ -97,7 +105,6 @@ export const PreferencesSettings = () => {
           </div>
         </CardContent>
       </Card>
-
       <Button onClick={handleSavePreferences}>Save Preferences</Button>
     </div>
   );

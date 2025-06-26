@@ -1,17 +1,16 @@
-
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { 
+import React, { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Card, CardContent } from '@/components/ui/card';
-import { Star, Tag, Plus } from 'lucide-react';
-import { SummaryData, SUMMARY_TAGS, SummaryTag } from '@/types/summary';
+} from "@/components/ui/select";
+import { Card, CardContent } from "@/components/ui/card";
+import { Star, Tag, Plus } from "lucide-react";
+import { SummaryData, SUMMARY_TAGS, SummaryTag } from "@/types/summary";
 
 interface SummaryRatingTagsProps {
   summary: SummaryData;
@@ -26,7 +25,7 @@ export const SummaryRatingTags: React.FC<SummaryRatingTagsProps> = ({
   onTagsChange,
   className = "",
 }) => {
-  const [selectedTag, setSelectedTag] = useState<string>('');
+  const [selectedTag, setSelectedTag] = useState<string>("");
 
   const handleStarClick = (rating: number) => {
     onRatingChange(rating);
@@ -36,12 +35,12 @@ export const SummaryRatingTags: React.FC<SummaryRatingTagsProps> = ({
     if (tag && !summary.tags?.includes(tag)) {
       const newTags = [...(summary.tags || []), tag];
       onTagsChange(newTags);
-      setSelectedTag('');
+      setSelectedTag("");
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    const newTags = (summary.tags || []).filter(tag => tag !== tagToRemove);
+    const newTags = (summary.tags || []).filter((tag) => tag !== tagToRemove);
     onTagsChange(newTags);
   };
 
@@ -55,8 +54,8 @@ export const SummaryRatingTags: React.FC<SummaryRatingTagsProps> = ({
         <Star
           className={`h-5 w-5 ${
             star <= (summary.userRating || 0)
-              ? 'fill-yellow-400 text-yellow-400'
-              : 'text-gray-300 hover:text-yellow-400'
+              ? "fill-yellow-400 text-yellow-400"
+              : "text-gray-300 hover:text-yellow-400"
           }`}
         />
       </button>
@@ -72,9 +71,7 @@ export const SummaryRatingTags: React.FC<SummaryRatingTagsProps> = ({
             <Star className="h-4 w-4" />
             Your Rating:
           </span>
-          <div className="flex gap-1">
-            {renderStars()}
-          </div>
+          <div className="flex gap-1">{renderStars()}</div>
           {summary.userRating && (
             <span className="text-sm text-gray-500">
               ({summary.userRating}/5)
@@ -95,7 +92,9 @@ export const SummaryRatingTags: React.FC<SummaryRatingTagsProps> = ({
                   <SelectValue placeholder="Add tag" />
                 </SelectTrigger>
                 <SelectContent>
-                  {SUMMARY_TAGS.filter(tag => !summary.tags?.includes(tag)).map((tag) => (
+                  {SUMMARY_TAGS.filter(
+                    (tag) => !summary.tags?.includes(tag),
+                  ).map((tag) => (
                     <SelectItem key={tag} value={tag} className="text-xs">
                       {tag}
                     </SelectItem>

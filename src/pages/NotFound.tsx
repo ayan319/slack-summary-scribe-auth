@@ -1,4 +1,3 @@
-
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ const NotFound = () => {
   useEffect(() => {
     console.error(
       "404 Error: User attempted to access non-existent route:",
-      location.pathname
+      location.pathname,
     );
   }, [location.pathname]);
 
@@ -27,23 +26,32 @@ const NotFound = () => {
               </div>
             </div>
           </div>
-          
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">Page Not Found</h1>
+
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            Page Not Found
+          </h1>
           <p className="text-gray-600 mb-2">
             Oops! The page you're looking for doesn't exist.
           </p>
           <p className="text-sm text-gray-500 mb-8">
-            The URL <code className="bg-gray-100 px-2 py-1 rounded text-xs">{location.pathname}</code> couldn't be found.
+            The URL{" "}
+            <code className="bg-gray-100 px-2 py-1 rounded text-xs">
+              {location.pathname}
+            </code>{" "}
+            couldn't be found.
           </p>
-          
+
           <div className="space-y-3">
             <Button asChild className="w-full">
-              <Link to="/dashboard" className="flex items-center justify-center gap-2">
+              <Link
+                to="/dashboard"
+                className="flex items-center justify-center gap-2"
+              >
                 <Home className="h-4 w-4" />
                 Go to Dashboard
               </Link>
             </Button>
-            
+
             <Button variant="outline" asChild className="w-full">
               <Link to="/" className="flex items-center justify-center gap-2">
                 <ArrowLeft className="h-4 w-4" />
@@ -51,9 +59,11 @@ const NotFound = () => {
               </Link>
             </Button>
           </div>
-          
+
           <div className="mt-8 pt-6 border-t">
-            <p className="text-xs text-gray-500 mb-3">Need help? Try these popular pages:</p>
+            <p className="text-xs text-gray-500 mb-3">
+              Need help? Try these popular pages:
+            </p>
             <div className="flex flex-wrap gap-2 justify-center">
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/settings">Settings</Link>
