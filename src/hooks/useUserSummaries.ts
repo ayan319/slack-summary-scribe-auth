@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabase";
 import { Session } from "@supabase/supabase-js";
-import { SummaryData, HistoryItem } from "@/types/summary";
+import { SummaryData, HistoryItem } from "@/src/types/summary";
 
 // For localStorage fallback
 const LOCAL_KEY = "summaryHistory";
@@ -91,7 +91,7 @@ export function useUserSummaries(session: Session | null) {
       if (error) throw error;
       if (data && data.length > 0) {
         const newItem: HistoryItem = {
-          id: data[0].id,
+          id: data[0].id as string,
           ...entry,
         };
         setHistory((h) => [newItem, ...h].slice(0, HISTORY_LIMIT));

@@ -1,5 +1,8 @@
+'use client';
+
 import React, { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   Home,
@@ -12,7 +15,7 @@ import {
 } from "lucide-react";
 
 const Navigation = () => {
-  const location = useLocation();
+  const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navItems = [
@@ -28,7 +31,7 @@ const Navigation = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center space-x-2">
               <Slack className="h-8 w-8 text-purple-600" />
               <span className="text-xl font-bold text-gray-900">
                 Slack Summarizer
@@ -39,7 +42,7 @@ const Navigation = () => {
           <div className="hidden md:flex items-center space-x-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path;
+              const isActive = pathname === item.path;
               return (
                 <Button
                   key={item.path}
@@ -47,7 +50,7 @@ const Navigation = () => {
                   size="sm"
                   asChild
                 >
-                  <Link to={item.path} className="flex items-center space-x-2">
+                  <Link href={item.path} className="flex items-center space-x-2">
                     <Icon className="h-4 w-4" />
                     <span>{item.label}</span>
                   </Link>
@@ -71,7 +74,7 @@ const Navigation = () => {
           <div className="md:hidden mt-2 bg-white rounded-lg shadow-lg border px-4 py-2 flex flex-col space-y-2 animate-fade-in">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path;
+              const isActive = pathname === item.path;
               return (
                 <Button
                   key={item.path}
@@ -82,7 +85,7 @@ const Navigation = () => {
                   onClick={() => setMobileOpen(false)}
                 >
                   <Link
-                    to={item.path}
+                    href={item.path}
                     className="flex items-center space-x-2 w-full"
                   >
                     <Icon className="h-4 w-4" />

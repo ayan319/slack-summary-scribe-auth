@@ -13,9 +13,9 @@ import {
   FileText,
   Database,
 } from "lucide-react";
-import { SummaryData } from "@/types/summary";
+import { SummaryData } from "@/src/types/summary";
 import { SummaryRatingTags } from "./SummaryRatingTags";
-import { useExportIntegrations } from "@/hooks/useExportIntegrations";
+import { useExportIntegrations } from "@/src/hooks/useExportIntegrations";
 
 interface SummaryResultProps {
   summary: SummaryData | null;

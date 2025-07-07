@@ -65,7 +65,6 @@ export const PreferencesSettings: React.FC = () => {
               </p>
             </div>
             <Switch
-              id="autoSync"
               checked={autoSyncEnabled}
               onCheckedChange={setAutoSyncEnabled}
             />
@@ -87,7 +86,6 @@ export const PreferencesSettings: React.FC = () => {
               <p className="text-sm text-gray-500">Receive updates via email</p>
             </div>
             <Switch
-              id="emailNotifications"
               checked={emailNotifications}
               onCheckedChange={setEmailNotifications}
             />
@@ -98,7 +96,6 @@ export const PreferencesSettings: React.FC = () => {
               <p className="text-sm text-gray-500">Get notified in Slack</p>
             </div>
             <Switch
-              id="slackNotifications"
               checked={slackNotifications}
               onCheckedChange={setSlackNotifications}
             />

@@ -353,7 +353,6 @@ export const CRMSettings: React.FC<CRMSettingsProps> = ({
                     </p>
                   </div>
                   <Switch
-                    id="autoSync"
                     checked={localSettings.autoSync}
                     onCheckedChange={(checked) =>
                       setLocalSettings((prev) => ({

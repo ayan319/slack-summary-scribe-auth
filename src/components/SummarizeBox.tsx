@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { User, History, FileText } from "lucide-react";
-import { SummaryData, HistoryItem } from "@/types/summary";
+import { SummaryData, HistoryItem } from "@/src/types/summary";
 import { TranscriptInput } from "./TranscriptInput";
 import { SummaryResult } from "./SummaryResult";
 import { TranscriptHistory } from "./TranscriptHistory";
-import { useUserSummaries } from "@/hooks/useUserSummaries";
-import { supabase } from "@/integrations/supabase/client";
+import { useUserSummaries } from "@/src/hooks/useUserSummaries";
+import { supabase } from "@/lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 
 const SummarizeBox = () => {

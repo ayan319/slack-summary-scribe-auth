@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, Tag, Plus } from "lucide-react";
-import { SummaryData, SUMMARY_TAGS, SummaryTag } from "@/types/summary";
+import { SummaryData, SUMMARY_TAGS, SummaryTag } from "@/src/types/summary";
 
 interface SummaryRatingTagsProps {
   summary: SummaryData;

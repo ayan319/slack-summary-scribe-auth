@@ -5,7 +5,7 @@ A powerful SaaS application that automatically summarizes Slack conversations us
 
 ## 🚀 Features
 
-- **🧠 AI-Powered Summaries**: Automatically generate intelligent summaries using DeepSeek/OpenAI
+- **🧠 AI-Powered Summaries**: Automatically generate intelligent summaries using OpenRouter (DeepSeek R1 + GPT-4o-mini fallback)
 - **⚡ Real-time Integration**: Seamless integration with Slack workspaces via OAuth
 - **🔐 Secure Authentication**: User management with Clerk integration
 - **💾 Data Persistence**: Reliable data storage with Supabase PostgreSQL
@@ -311,7 +311,8 @@ docker run -p 3000:3000 --env-file .env slack-summary-scribe
 | `NEXTAUTH_SECRET` | ✅ | Random secret for NextAuth.js |
 | `SUPABASE_URL` | ✅ | Supabase project URL |
 | `SUPABASE_ANON_KEY` | ✅ | Supabase anonymous key |
-| `DEEPSEEK_API_KEY` | ⚠️ | DeepSeek API key for AI analysis |
+| `OPENROUTER_API_KEY` | ⚠️ | OpenRouter API key for AI analysis (DeepSeek R1 + GPT-4o-mini) |
+| `DEEPSEEK_API_KEY` | ⚠️ | Legacy DeepSeek API key (deprecated - use OpenRouter) |
 | `SLACK_BOT_TOKEN` | ⚠️ | Slack bot token (xoxb-...) |
 | `SLACK_SIGNING_SECRET` | ⚠️ | Slack app signing secret |
 | `NOTION_TOKEN` | ⚠️ | Notion integration token |

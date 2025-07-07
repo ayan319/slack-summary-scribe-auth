@@ -2,7 +2,7 @@ import { useState } from "react";
 import { toast } from "@/hooks/use-toast";
 
 // Notion OAuth config (update with your integration IDs as secrets in Supabase)
-const NOTION_CLIENT_ID = import.meta.env.VITE_NOTION_CLIENT_ID as string;
+const NOTION_CLIENT_ID = process.env.NEXT_PUBLIC_NOTION_CLIENT_ID as string;
 const REDIRECT_URI = window.location.origin + "/notion-oauth-callback";
 
 export function useNotionOAuth() {

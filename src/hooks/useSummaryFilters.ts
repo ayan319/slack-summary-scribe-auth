@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { HistoryItem, FilterOptions } from "@/types/summary";
+import { HistoryItem, FilterOptions } from "@/src/types/summary";
 
 export const useSummaryFilters = (
   summaries: HistoryItem[],

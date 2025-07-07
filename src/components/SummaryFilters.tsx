@@ -11,14 +11,14 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Search, Filter, X, Star } from "lucide-react";
-import { SUMMARY_TAGS, FilterOptions } from "@/types/summary";
+import { SUMMARY_TAGS, FilterOptions } from "@/src/types/summary";
 import { Label } from "@/components/ui/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { HistoryItem } from "@/types/summary";
+import { HistoryItem } from "@/src/types/summary";
 import { FilterState } from "@/utils/filterStorage";
 
 interface SummaryFiltersProps {

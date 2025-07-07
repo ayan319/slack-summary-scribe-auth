@@ -1,0 +1,4 @@
+supabase/functions/**/*
+dist/**/*
+node_modules/**/*
+.git/**/*

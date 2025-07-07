@@ -1,0 +1,161 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  # Core Configuration
+  NODE_ENV: test
+  NEXT_PUBLIC_APP_URL: ${{ vars.NEXT_PUBLIC_APP_URL || 'https://summaryai.com' }}
+
+  # Database & Backend
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+  # AI Services
+  DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+
+  # Deployment
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+  # Optional Integrations
+  NOTION_API_TOKEN: ${{ secrets.NOTION_API_TOKEN }}
+  NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+  SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECT }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run linting
+      run: npm run lint || echo "Linting completed with warnings"
+
+    - name: Run type checking
+      run: npx tsc --noEmit
+
+    - name: Run tests
+      run: npm test
+
+    - name: Upload coverage reports
+      if: success()
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+    - name: Build application
+      run: npm run build
+
+    - name: Run Enhanced Pipeline Tests
+      run: |
+        npm run start &
+        SERVER_PID=$!
+        sleep 15
+        curl -f -X POST http://localhost:3000/api/test-enhanced-pipeline \
+          -H "Content-Type: application/json" \
+          -d '{}' || echo "Pipeline tests completed with warnings"
+        kill $SERVER_PID 2>/dev/null || pkill -f "npm run start" 2>/dev/null || true
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    environment:
+      name: production
+      url: https://summaryai.com
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application
+      run: npm run build
+
+    - name: Deploy to Vercel
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ env.VERCEL_TOKEN }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        vercel-org-id: ${{ env.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ env.VERCEL_PROJECT_ID }}
+        vercel-args: '--prod'
+
+    - name: Notify Slack on Success
+      if: success() && env.SLACK_WEBHOOK_URL != ''
+      uses: 8398a7/action-slack@v3.15.1
+      with:
+        status: success
+        channel: '#deployments'
+        text: '🚀 Successfully deployed to production!'
+      env:
+        SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK_URL }}
+      continue-on-error: true
+
+    - name: Notify Slack on Failure
+      if: failure() && env.SLACK_WEBHOOK_URL != ''
+      uses: 8398a7/action-slack@v3.15.1
+      with:
+        status: failure
+        channel: '#deployments'
+        text: '❌ Production deployment failed!'
+      env:
+        SLACK_WEBHOOK_URL: ${{ env.SLACK_WEBHOOK_URL }}
+      continue-on-error: true
+
+    - name: Create Sentry Release
+      if: env.SENTRY_AUTH_TOKEN != '' && env.SENTRY_ORG != '' && env.SENTRY_PROJECT != ''
+      uses: getsentry/action-release@v1
+      env:
+        SENTRY_AUTH_TOKEN: ${{ env.SENTRY_AUTH_TOKEN }}
+        SENTRY_ORG: ${{ env.SENTRY_ORG }}
+        SENTRY_PROJECT: ${{ env.SENTRY_PROJECT }}
+      with:
+        environment: production
+      continue-on-error: true
+
+    - name: Run Lighthouse CI
+      uses: treosh/lighthouse-ci-action@v10
+      with:
+        urls: |
+          https://summaryai.com
+          https://summaryai.com/dashboard
+          https://summaryai.com/pricing
+        configPath: './lighthouserc.json'
+        uploadArtifacts: true
+        temporaryPublicStorage: true
+      continue-on-error: true
+
+

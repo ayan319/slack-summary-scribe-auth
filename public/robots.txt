@@ -7,7 +7,7 @@ Disallow: /settings
 Disallow: /slack-test
 
 # Host
-Host: https://summaryai.com
+Host: http://localhost:3000
 
 # Sitemaps
-Sitemap: https://summaryai.com/sitemap.xml
+Sitemap: http://localhost:3000/sitemap.xml

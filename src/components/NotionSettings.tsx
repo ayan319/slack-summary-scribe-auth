@@ -27,7 +27,7 @@ import {
   AlertCircle,
   Database,
 } from "lucide-react";
-import { NotionSettings as NotionSettingsType } from "@/types/summary";
+import { NotionSettings as NotionSettingsType } from "@/src/types/summary";
 
 interface NotionSettingsProps {
   onSave: (settings: { apiKey: string; databaseId: string }) => void;

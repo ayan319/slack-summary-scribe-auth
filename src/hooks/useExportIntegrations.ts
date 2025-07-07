@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { SummaryData } from "@/types/summary";
+import { SummaryData } from "@/src/types/summary";
 
 export interface ExportOptions {
   slackChannel?: string;

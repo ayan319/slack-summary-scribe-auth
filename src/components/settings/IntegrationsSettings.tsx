@@ -11,9 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import {
   CRMSettings,
   CRMSettings as CRMSettingsComponent,
-} from "@/components/CRMSettings";
-import { NotionSettings } from "@/components/NotionSettings";
-import { NotionSettings as NotionSettingsType } from "@/types/summary";
+} from "@/src/components/CRMSettings";
+import { NotionSettings } from "@/src/components/NotionSettings";
+import { NotionSettings as NotionSettingsType } from "@/src/types/summary";
 import { Slack, CheckCircle, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
