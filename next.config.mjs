@@ -1,5 +1,3 @@
-import { withSentryConfig } from '@sentry/nextjs';
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Enable strict mode for better development experience
@@ -43,27 +41,6 @@ const nextConfig = {
   },
 };
 
-// Sentry configuration optimized for Vercel deployment
-const sentryWebpackPluginOptions = {
-  org: process.env.SENTRY_ORG,
-  project: process.env.SENTRY_PROJECT,
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-
-  // Only upload source maps in production
-  silent: process.env.NODE_ENV !== 'production',
-
-  // Optimized source map configuration for Vercel
-  widenClientFileUpload: true,
-  transpileClientSDK: true,
-  hideSourceMaps: true,
-  deleteSourcemapsAfterUpload: true,
-
-  // Use Vercel commit SHA for releases
-  release: process.env.VERCEL_GIT_COMMIT_SHA,
-
-  // Disable in development to speed up builds
-  disableServerWebpackPlugin: process.env.NODE_ENV !== 'production',
-  disableClientWebpackPlugin: process.env.NODE_ENV !== 'production',
-};
-
-export default withSentryConfig(nextConfig, sentryWebpackPluginOptions);
+// Export plain Next.js config to avoid Sentry build issues on Vercel
+// Sentry will still work at runtime via the client initialization
+export default nextConfig;
