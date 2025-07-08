@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase';
-import { AISummarizer } from '@/src/lib/ai-summarizer';
-import { SentryTracker } from '@/src/lib/sentry-utils';
+import { generateDeepSeekSummary } from '@/lib/slack';
+import { SentryTracker } from '@/lib/sentry.client';
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,29 +28,16 @@ export async function POST(request: NextRequest) {
     });
 
     // Generate summary using AI
-    const summaryRequest = {
-      transcriptText,
-      userId,
-      teamId,
-      context: context || {
-        source: 'manual',
-        timestamp: new Date().toISOString(),
-      },
-    };
+    const startTime = Date.now();
 
-    const result = await AISummarizer.generateSummary(summaryRequest);
+    try {
+      const summaryText = await generateDeepSeekSummary(transcriptText, context?.source || 'manual');
+      const processingTime = Date.now() - startTime;
 
-    if (result.error) {
-      SentryTracker.addSummarizationBreadcrumb('manual', 'failed', undefined, {
-        error: result.error,
+      SentryTracker.addSummarizationBreadcrumb('manual', 'completed', processingTime, {
         userId,
+        textLength: transcriptText.length,
       });
-
-      return NextResponse.json(
-        { error: 'Failed to generate summary', details: result.error },
-        { status: 500 }
-      );
-    }
 
     // Save to database
     const supabase = createSupabaseClient();
@@ -59,27 +46,27 @@ export async function POST(request: NextRequest) {
       .insert({
         user_id: userId,
         team_id: teamId,
-        title: result.data?.title || 'Untitled Summary',
-        summary_text: result.data?.summary || '',
+        title: `Summary - ${new Date().toLocaleDateString()}`,
+        summary_text: summaryText,
         summary: {
-          text: result.data?.summary || '',
-          skills: result.data?.skills || [],
-          redFlags: result.data?.redFlags || [],
-          actions: result.data?.actionItems || [],
-          sentiment: result.data?.sentiment,
-          urgency: result.data?.urgency,
-          participants: result.data?.participants || [],
-          speakerCount: result.data?.participants?.length || 0,
+          text: summaryText,
+          skills: [],
+          redFlags: [],
+          actions: [],
+          sentiment: 'neutral',
+          urgency: 'medium',
+          participants: [],
+          speakerCount: 0,
         },
-        skills_detected: result.data?.skills || [],
-        red_flags: result.data?.redFlags || [],
-        actions: result.data?.actionItems || [],
+        skills_detected: [],
+        red_flags: [],
+        actions: [],
         tags: [],
         source: context?.source || 'manual',
         raw_transcript: transcriptText,
-        processing_time_ms: result.data?.processingTimeMs || 0,
-        ai_model: 'deepseek-chat',
-        confidence_score: result.data?.confidence || 0.8,
+        processing_time_ms: processingTime,
+        ai_model: 'deepseek-r1',
+        confidence_score: 0.8,
       })
       .select()
       .single();
@@ -96,20 +83,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    SentryTracker.addSummarizationBreadcrumb('manual', 'completed', result.data?.processingTimeMs, {
-      summaryId: summary.id,
-      userId,
-    });
+      SentryTracker.addDatabaseBreadcrumb('insert', 'summaries', true, {
+        summaryId: summary.id,
+        userId,
+      });
 
-    SentryTracker.addDatabaseBreadcrumb('insert', 'summaries', true, {
-      summaryId: summary.id,
-      userId,
-    });
+      return NextResponse.json({
+        success: true,
+        data: summary,
+      });
 
-    return NextResponse.json({
-      success: true,
-      data: summary,
-    });
+    } catch (aiError) {
+      SentryTracker.addSummarizationBreadcrumb('manual', 'failed', undefined, {
+        error: aiError instanceof Error ? aiError.message : 'Unknown error',
+        userId,
+      });
+
+      return NextResponse.json(
+        { error: 'Failed to generate summary', details: aiError instanceof Error ? aiError.message : 'Unknown error' },
+        { status: 500 }
+      );
+    }
 
   } catch (error) {
     console.error('Summarize API error:', error);

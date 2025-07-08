@@ -129,4 +129,75 @@ if (typeof window !== 'undefined') {
   initializeSentry();
 }
 
+// Sentry utility class for consistent tracking across the application
+export class SentryTracker {
+  static addAPIBreadcrumb(method: string, endpoint: string, data?: any, extra?: any) {
+    Sentry.addBreadcrumb({
+      message: `API ${method} ${endpoint}`,
+      category: 'api',
+      level: 'info',
+      data: { method, endpoint, ...data, ...extra },
+    });
+  }
+
+  static addAuthBreadcrumb(action: string, status: string, success: boolean, extra?: any) {
+    Sentry.addBreadcrumb({
+      message: `Auth ${action} ${status}`,
+      category: 'auth',
+      level: success ? 'info' : 'error',
+      data: { action, status, success, ...extra },
+    });
+  }
+
+  static addDatabaseBreadcrumb(operation: string, table: string, success: boolean, extra?: any) {
+    Sentry.addBreadcrumb({
+      message: `Database ${operation} on ${table}`,
+      category: 'database',
+      level: success ? 'info' : 'error',
+      data: { operation, table, success, ...extra },
+    });
+  }
+
+  static addSummarizationBreadcrumb(type: string, status: string, processingTime?: number, extra?: any) {
+    Sentry.addBreadcrumb({
+      message: `Summarization ${type} ${status}`,
+      category: 'ai',
+      level: 'info',
+      data: { type, status, processingTime, ...extra },
+    });
+  }
+
+  static addSlackWebhookBreadcrumb(event: string, success: boolean, extra?: any) {
+    Sentry.addBreadcrumb({
+      message: `Slack webhook ${event}`,
+      category: 'slack',
+      level: success ? 'info' : 'error',
+      data: { event, success, ...extra },
+    });
+  }
+
+  static addUploadBreadcrumb(action: string, success: boolean, extra?: any) {
+    Sentry.addBreadcrumb({
+      message: `Upload ${action}`,
+      category: 'upload',
+      level: success ? 'info' : 'error',
+      data: { action, success, ...extra },
+    });
+  }
+
+  static setUserContext(user?: { id: string; email?: string; [key: string]: any }) {
+    Sentry.setUser(user || null);
+  }
+
+  static captureException(error: Error, context?: { component?: string; action?: string; extra?: any }) {
+    Sentry.captureException(error, {
+      tags: {
+        component: context?.component,
+        action: context?.action,
+      },
+      extra: context?.extra,
+    });
+  }
+}
+
 export default initializeSentry;

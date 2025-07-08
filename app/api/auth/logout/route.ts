@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseClient } from '@/lib/supabase';
-import { SentryTracker } from '@/src/lib/sentry-utils';
+import { SentryTracker } from '@/lib/sentry.client';
 
 export async function POST(request: NextRequest) {
   try {
