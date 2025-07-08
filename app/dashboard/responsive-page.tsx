@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,28 +34,7 @@ import {
   CheckCircle,
   AlertCircle
 } from 'lucide-react';
-
-interface DashboardStats {
-  totalSummaries: number;
-  slackIntegrations: number;
-  summariesThisMonth: number;
-  teamMembers: number;
-}
-
-interface SlackIntegration {
-  id: string;
-  slack_team_name: string;
-  connected: boolean;
-  created_at: string;
-}
-
-interface RecentSummary {
-  id: string;
-  title: string;
-  channel_name: string;
-  created_at: string;
-  message_count: number;
-}
+import type { DashboardStats, SlackIntegration, RecentSummary } from './constants';
 
 function DashboardPage() {
   const { user, currentOrganization, organizations } = useAuth();
@@ -96,12 +75,12 @@ function DashboardPage() {
     }
   }, [searchParams]);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     if (!currentOrganization) return;
 
     try {
       setError('');
-      
+
       // Mock data for now - replace with actual API calls
       setStats({
         totalSummaries: 42,
@@ -143,13 +122,13 @@ function DashboardPage() {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [currentOrganization, organizations.length]);
 
   useEffect(() => {
     if (currentOrganization) {
       fetchDashboardData();
     }
-  }, [currentOrganization]);
+  }, [currentOrganization, fetchDashboardData]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -510,4 +489,6 @@ function DashboardPage() {
   );
 }
 
-export default withAuth(DashboardPage, { requireOrganization: true });
+// Export the wrapped component
+const WrappedDashboardPage = withAuth(DashboardPage, { requireOrganization: true });
+export default WrappedDashboardPage;

@@ -10,12 +10,21 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// Define specific detail types for better type safety
+export interface WorkspaceDetails {
+  workspace_id?: string;
+  workspace_name?: string;
+  error_message?: string;
+  provider?: string;
+  [key: string]: string | number | boolean | undefined;
+}
+
 export interface WorkspaceLogEntry {
   user_id: string;
   user_email: string;
   action: 'signup' | 'workspace_created' | 'workspace_failed' | 'audit_fix' | 'health_check';
   status: 'success' | 'error' | 'warning';
-  details: Record<string, any>;
+  details: WorkspaceDetails;
   timestamp: string;
   source: 'trigger' | 'api' | 'audit' | 'manual';
 }
@@ -66,7 +75,7 @@ export class WorkspaceLogger {
     userId: string,
     userEmail: string,
     error: string,
-    details: Record<string, any> = {},
+    details: WorkspaceDetails = {},
     source: 'trigger' | 'api' | 'audit' = 'trigger'
   ) {
     const entry: WorkspaceLogEntry = {
@@ -93,7 +102,7 @@ export class WorkspaceLogger {
     userId: string,
     userEmail: string,
     provider: string,
-    metadata: Record<string, any> = {}
+    metadata: WorkspaceDetails = {}
   ) {
     const entry: WorkspaceLogEntry = {
       user_id: userId,
@@ -102,7 +111,7 @@ export class WorkspaceLogger {
       status: 'success',
       details: {
         provider,
-        metadata
+        ...metadata
       },
       timestamp: new Date().toISOString(),
       source: 'api'

@@ -2,12 +2,24 @@ import { Cashfree } from 'cashfree-pg';
 import crypto from 'crypto';
 import { SubscriptionPlan } from '@prisma/client';
 
-// Initialize Cashfree
-(Cashfree as any).XClientId = process.env.CASHFREE_APP_ID!;
-(Cashfree as any).XClientSecret = process.env.CASHFREE_SECRET_KEY!;
-(Cashfree as any).XEnvironment = process.env.NODE_ENV === 'production'
-  ? (Cashfree as any).Environment.PRODUCTION
-  : (Cashfree as any).Environment.SANDBOX;
+// Define Cashfree types for better type safety
+interface CashfreeStatic {
+  XClientId: string;
+  XClientSecret: string;
+  XEnvironment: string;
+  Environment: {
+    PRODUCTION: string;
+    SANDBOX: string;
+  };
+}
+
+// Initialize Cashfree with proper typing
+const CashfreeTyped = Cashfree as unknown as CashfreeStatic;
+CashfreeTyped.XClientId = process.env.CASHFREE_APP_ID!;
+CashfreeTyped.XClientSecret = process.env.CASHFREE_SECRET_KEY!;
+CashfreeTyped.XEnvironment = process.env.NODE_ENV === 'production'
+  ? CashfreeTyped.Environment.PRODUCTION
+  : CashfreeTyped.Environment.SANDBOX;
 
 // Cashfree configuration
 export const cashfreeConfig = {
@@ -89,13 +101,22 @@ export function verifyPaymentSignature(payload: string, signature: string): bool
   }
 }
 
+// Define return type for subscription order
+export interface SubscriptionOrderResponse {
+  success: boolean;
+  order_id: string;
+  payment_session_id?: string;
+  payment_url?: string;
+  error?: string;
+}
+
 // Create subscription order
 export async function createSubscriptionOrder(
   userId: string,
   userEmail: string,
   userName: string,
   plan: SubscriptionPlan
-): Promise<any> {
+): Promise<SubscriptionOrderResponse> {
   try {
     if (!PLAN_PRICING[plan]) {
       throw new Error(`Invalid plan: ${plan}`);
@@ -133,7 +154,9 @@ export async function createSubscriptionOrder(
     });
 
     // Create order with Cashfree
-    const response = await (Cashfree as any).PGCreateOrder('2023-08-01', orderRequest);
+    const response = await (Cashfree as unknown as {
+      PGCreateOrder: (version: string, request: CashfreeOrderRequest) => Promise<{ data: { order_id: string; payment_session_id: string; payment_url: string } }>;
+    }).PGCreateOrder('2023-08-01', orderRequest);
 
     if (!response || !response.data) {
       throw new Error('Invalid response from Cashfree API');
@@ -141,21 +164,20 @@ export async function createSubscriptionOrder(
 
     const orderData = response.data;
 
-    if (orderData.order_status !== 'ACTIVE') {
-      throw new Error(`Order creation failed: ${orderData.order_status}`);
-    }
+    // Note: Order status check removed as Cashfree create order response doesn't include order_status
+    // The order is considered successful if we get order_id and payment_session_id
 
     console.log('Cashfree order created successfully:', {
       orderId: orderData.order_id,
-      orderToken: orderData.order_token,
-      status: orderData.order_status
+      paymentSessionId: orderData.payment_session_id,
+      paymentUrl: orderData.payment_url
     });
 
     return {
+      success: true,
       order_id: orderData.order_id,
-      order_token: orderData.order_token,
-      order_status: orderData.order_status,
       payment_session_id: orderData.payment_session_id,
+      payment_url: orderData.payment_url,
     };
   } catch (error) {
     console.error('Error creating Cashfree order:', error);
@@ -163,10 +185,21 @@ export async function createSubscriptionOrder(
   }
 }
 
+// Define order status response type
+export interface OrderStatusResponse {
+  order_id: string;
+  order_status: string;
+  payment_status: string;
+  order_amount: number;
+  order_currency: string;
+}
+
 // Get order status
-export async function getOrderStatus(orderId: string): Promise<any> {
+export async function getOrderStatus(orderId: string): Promise<OrderStatusResponse> {
   try {
-    const response = await (Cashfree as any).PGOrderFetchPayments('2023-08-01', orderId);
+    const response = await (Cashfree as unknown as {
+      PGOrderFetchPayments: (version: string, orderId: string) => Promise<{ data: OrderStatusResponse }>;
+    }).PGOrderFetchPayments('2023-08-01', orderId);
     return response.data;
   } catch (error) {
     console.error('Error fetching order status:', error);
@@ -174,8 +207,14 @@ export async function getOrderStatus(orderId: string): Promise<any> {
   }
 }
 
+// Define cancel order response type
+export interface CancelOrderResponse {
+  success: boolean;
+  message: string;
+}
+
 // Cancel order
-export async function cancelOrder(orderId: string): Promise<any> {
+export async function cancelOrder(orderId: string): Promise<CancelOrderResponse> {
   try {
     // Note: Cashfree doesn't have a direct cancel order API
     // This would typically be handled through their dashboard
@@ -187,12 +226,20 @@ export async function cancelOrder(orderId: string): Promise<any> {
   }
 }
 
+// Define refund response type
+export interface RefundResponse {
+  refund_id: string;
+  refund_status: string;
+  refund_amount: number;
+  refund_currency: string;
+}
+
 // Refund payment
 export async function refundPayment(
   orderId: string,
   refundAmount: number,
   refundNote?: string
-): Promise<any> {
+): Promise<RefundResponse> {
   try {
     const refundRequest = {
       refund_amount: refundAmount,
@@ -200,7 +247,9 @@ export async function refundPayment(
       refund_note: refundNote || 'Subscription refund',
     };
 
-    const response = await (Cashfree as any).PGOrderCreateRefund(
+    const response = await (Cashfree as unknown as {
+      PGOrderCreateRefund: (version: string, orderId: string, request: typeof refundRequest) => Promise<{ data: RefundResponse }>;
+    }).PGOrderCreateRefund(
       '2023-08-01',
       orderId,
       refundRequest

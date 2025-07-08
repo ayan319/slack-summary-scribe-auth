@@ -131,15 +131,21 @@ export async function GET(request: NextRequest) {
       },
       stats: {
         totalSummaries,
-        workspacesConnected: workspaces?.filter((w: any) => w.connected).length || 0,
+        workspacesConnected: workspaces?.filter((w: { connected: boolean }) => w.connected).length || 0,
         summariesThisMonth,
       },
-      slackWorkspaces: workspaces?.map((workspace: any) => ({
+      slackWorkspaces: workspaces?.map((workspace: { id: string; name: string; connected: boolean }) => ({
         id: workspace.id,
         name: workspace.name,
         connected: workspace.connected,
       })) || [],
-      recentSummaries: summaries?.map((summary: any) => ({
+      recentSummaries: summaries?.map((summary: {
+        id: string;
+        title: string;
+        channel_name: string;
+        created_at: string;
+        message_count: number
+      }) => ({
         id: summary.id,
         title: summary.title,
         channelName: summary.channel_name,
