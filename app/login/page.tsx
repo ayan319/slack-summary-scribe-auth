@@ -88,17 +88,46 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        const { user } = await signUpWithEmail(formData.email, formData.password, formData.name);
-        if (user && !user.email_confirmed_at) {
-          setSuccess('Please check your email to confirm your account before signing in.');
+        // Use API route for signup
+        const response = await fetch('/api/auth/signup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          if (result.needsVerification) {
+            setSuccess('Please check your email to confirm your account before signing in.');
+          } else {
+            setSuccess('Account created successfully! Redirecting...');
+            // Check if user is now authenticated
+            const user = await getCurrentUser();
+            if (user) {
+              setTimeout(() => router.push('/dashboard'), 1000);
+            } else {
+              setSuccess('Account created! Please sign in to continue.');
+              setIsSignUp(false); // Switch to login mode
+            }
+          }
         } else {
-          setSuccess('Account created successfully! Redirecting...');
-          setTimeout(() => router.push('/dashboard'), 1000);
+          setError(result.error || 'Failed to create account');
         }
       } else {
-        await signInWithEmail(formData.email, formData.password);
-        setSuccess('Signed in successfully! Redirecting...');
-        setTimeout(() => router.push('/dashboard'), 1000);
+        const result = await signInWithEmail(formData.email, formData.password);
+        if (result.success) {
+          setSuccess('Signed in successfully! Redirecting...');
+          setTimeout(() => router.push('/dashboard'), 1000);
+        } else {
+          setError(result.error || 'Failed to sign in');
+        }
       }
     } catch (error) {
       console.error('Email auth error:', error);

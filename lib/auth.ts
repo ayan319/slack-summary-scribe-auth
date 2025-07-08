@@ -52,7 +52,7 @@ export async function signUpWithEmail(email: string, password: string, name?: st
           full_name: name,
           name: name,
         },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3003'}/api/auth/callback`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/callback`,
       },
     });
 
