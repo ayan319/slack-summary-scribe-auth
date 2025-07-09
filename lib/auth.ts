@@ -200,19 +200,34 @@ export async function signOut() {
  * Get current user session
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
+  console.log('🔍 getCurrentUser: Fetching user session...');
   const { data: { user }, error } = await supabase.auth.getUser();
 
-  if (error || !user) {
+  if (error) {
+    console.log('❌ getCurrentUser: Error fetching user:', error.message);
     return null;
   }
 
-  return {
+  if (!user) {
+    console.log('⚠️ getCurrentUser: No user found in session');
+    return null;
+  }
+
+  const authUser = {
     id: user.id,
     email: user.email!,
     name: user.user_metadata?.full_name || user.user_metadata?.name || user.email!,
     avatar_url: user.user_metadata?.avatar_url,
     provider: user.app_metadata?.provider,
   };
+
+  console.log('✅ getCurrentUser: User found:', {
+    id: authUser.id,
+    email: authUser.email,
+    name: authUser.name
+  });
+
+  return authUser;
 }
 
 /**

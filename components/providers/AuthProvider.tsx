@@ -102,18 +102,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('🔄 AuthProvider: Initializing auth...');
       setLoading(true);
-      
+
       try {
         const currentUser = await getCurrentUser();
+        console.log('📝 AuthProvider: Current user:', {
+          hasUser: !!currentUser,
+          email: currentUser?.email
+        });
         setUser(currentUser);
         if (currentUser) {
           await refreshOrganizations();
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        console.error('❌ AuthProvider: Error initializing auth:', error);
       } finally {
         setLoading(false);
+        console.log('✅ AuthProvider: Initialization complete');
       }
     };
 
@@ -121,11 +127,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Listen for auth state changes
     const { data: { subscription } } = onAuthStateChange(async (authUser) => {
+      console.log('🔄 AuthProvider: Auth state changed:', {
+        hasUser: !!authUser,
+        email: authUser?.email
+      });
       setUser(authUser);
-      
+
       if (authUser) {
         await refreshOrganizations();
       } else {
+        console.log('🚪 AuthProvider: No user, clearing data and redirecting to login');
         setOrganizations([]);
         setCurrentOrganizationState(null);
         localStorage.removeItem('currentOrganization');
