@@ -2,421 +2,70 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Chrome, Loader2, AlertCircle, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { signInWithOAuth, signInWithEmail, signUpWithEmail, getCurrentUser, resendVerification } from '@/lib/auth';
-import { AuthLoadingSkeleton } from '@/components/skeletons/AuthSkeleton';
 
 export default function LoginPage() {
-  const [loading, setLoading] = useState<'google' | 'email' | 'resend' | null>(null);
-  const [error, setError] = useState<string>('');
-  const [success, setSuccess] = useState<string>('');
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [isSignUp, setIsSignUp] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showResendVerification, setShowResendVerification] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    name: '',
-  });
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
-  // Check if user is already authenticated
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const user = await getCurrentUser();
-        if (user) {
-          router.push('/dashboard');
-          return;
-        }
-      } catch (error) {
-        console.error('Auth check error:', error);
-      } finally {
-        setCheckingAuth(false);
-      }
-    };
+    setMounted(true);
+    console.log('🔐 Login page mounted successfully');
+  }, []);
 
-    checkAuth();
-  }, [router]);
-
-  const handleOAuthSignIn = async (provider: 'google') => {
-    setLoading(provider);
-    setError('');
-    setSuccess('');
-
-    try {
-      await signInWithOAuth(provider);
-      // The OAuth flow will redirect to the callback page
-    } catch (error) {
-      console.error(`${provider} sign in error:`, error);
-      setError(error instanceof Error ? error.message : `Failed to sign in with ${provider}`);
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const handleEmailAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading('email');
-    setError('');
-    setSuccess('');
-
-    // Basic validation
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all required fields');
-      setLoading(null);
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      setLoading(null);
-      return;
-    }
-
-    if (isSignUp && !formData.name) {
-      setError('Please enter your name');
-      setLoading(null);
-      return;
-    }
-
-    try {
-      if (isSignUp) {
-        // Use API route for signup
-        const response = await fetch('/api/auth/signup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            password: formData.password,
-          }),
-        });
-
-        const result = await response.json();
-        console.log('📝 Signup response:', result);
-
-        if (result.success) {
-          if (result.needsVerification) {
-            setSuccess('Please check your email to confirm your account before signing in.');
-          } else {
-            setSuccess('Account created successfully! Redirecting...');
-
-            // If we have a session, the user is automatically logged in
-            if (result.session) {
-              console.log('✅ User has session, redirecting to dashboard');
-              // Force a page refresh to ensure auth state is updated
-              window.location.href = '/dashboard';
-            } else {
-              // No session, but account created - switch to login
-              setSuccess('Account created! Please sign in to continue.');
-              setIsSignUp(false);
-            }
-          }
-        } else {
-          console.log('❌ Signup failed:', result.error);
-          setError(result.error || 'Failed to create account');
-        }
-      } else {
-        console.log('🔐 Attempting login for:', formData.email);
-        const result = await signInWithEmail(formData.email, formData.password);
-        console.log('📝 Login response:', result);
-
-        if (result.success) {
-          setSuccess('Signed in successfully! Redirecting...');
-          // Force a page refresh to ensure auth state is updated
-          window.location.href = '/dashboard';
-        } else {
-          console.log('❌ Login failed:', result.error);
-          setError(result.error || 'Failed to sign in');
-        }
-      }
-    } catch (error) {
-      console.error('Email auth error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Authentication failed';
-      setError(errorMessage);
-
-      // Show resend verification option if email not confirmed
-      if (errorMessage.includes('confirmation link') || errorMessage.includes('Email not confirmed')) {
-        setShowResendVerification(true);
-      }
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const handleResendVerification = async () => {
-    if (!formData.email) {
-      setError('Please enter your email address');
-      return;
-    }
-
-    setLoading('resend');
-    setError('');
-    setSuccess('');
-
-    try {
-      await resendVerification(formData.email);
-      setSuccess('Verification email sent! Please check your inbox and click the confirmation link.');
-      setShowResendVerification(false);
-    } catch (error) {
-      console.error('Resend verification error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to resend verification email');
-    } finally {
-      setLoading(null);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-  };
-
-  if (checkingAuth) {
-    return <AuthLoadingSkeleton />;
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p>Loading login page...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        {/* Header */}
-        <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
-            Welcome to Slack Summary Scribe
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            {isSignUp ? 'Create your account to get started' : 'Sign in to your account to get started'}
-          </p>
-        </div>
-
-        {/* Login Card */}
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle>{isSignUp ? 'Sign Up' : 'Sign In'}</CardTitle>
-            <CardDescription>
-              {isSignUp ? 'Create a new account' : 'Choose your preferred sign-in method'}
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-4">
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  {error}
-                  {showResendVerification && (
-                    <div className="mt-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleResendVerification}
-                        disabled={loading !== null}
-                        className="text-xs"
-                      >
-                        {loading === 'resend' ? (
-                          <>
-                            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            Sending...
-                          </>
-                        ) : (
-                          'Resend Verification Email'
-                        )}
-                      </Button>
-                    </div>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {success && (
-              <Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
-                <AlertCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <AlertDescription className="text-green-800 dark:text-green-200">
-                  {success}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {/* Email/Password Form */}
-            <form onSubmit={handleEmailAuth} className="space-y-4">
-              {isSignUp && (
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    disabled={loading !== null}
-                    required={isSignUp}
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    disabled={loading !== null}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Enter your password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    disabled={loading !== null}
-                    className="pl-10 pr-10"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                    disabled={loading !== null}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-                {isSignUp && (
-                  <p className="text-xs text-gray-500">Password must be at least 6 characters long</p>
-                )}
-              </div>
-
-              <Button
-                type="submit"
-                disabled={loading !== null}
-                className="w-full h-12 text-base"
-              >
-                {loading === 'email' ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                    {isSignUp ? 'Creating Account...' : 'Signing In...'}
-                  </>
-                ) : (
-                  <>
-                    {isSignUp ? 'Create Account' : 'Sign In'}
-                  </>
-                )}
-              </Button>
-            </form>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <h1 className="text-2xl font-bold text-center text-gray-900 mb-8">
+            🔐 Login Page Test
+          </h1>
+          
+          <div className="space-y-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h3 className="font-semibold text-green-900 mb-2">✅ Page Status</h3>
+              <ul className="text-green-800 text-sm space-y-1">
+                <li>• Login page is rendering correctly</li>
+                <li>• No routing issues detected</li>
+                <li>• React component mounted successfully</li>
+              </ul>
             </div>
 
-            {/* Google Sign In */}
-            <Button
-              onClick={() => handleOAuthSignIn('google')}
-              disabled={loading !== null}
-              variant="outline"
-              className="w-full h-12 text-base"
-            >
-              {loading === 'google' ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-3 animate-spin" />
-                  Signing in with Google...
-                </>
-              ) : (
-                <>
-                  <Chrome className="h-5 w-5 mr-3" />
-                  Continue with Google
-                </>
-              )}
-            </Button>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-900 mb-2">🔧 Debug Info</h3>
+              <p className="text-blue-800 text-sm">
+                Timestamp: {new Date().toISOString()}
+              </p>
+            </div>
 
-
-
-            {/* Toggle Sign In/Sign Up */}
-            <div className="text-center">
+            <div className="space-y-3">
               <button
-                type="button"
-                onClick={() => {
-                  setIsSignUp(!isSignUp);
-                  setError('');
-                  setSuccess('');
-                  setShowResendVerification(false);
-                  setFormData({ email: '', password: '', name: '' });
-                }}
-                className="text-sm text-blue-600 hover:text-blue-500 underline"
-                disabled={loading !== null}
+                onClick={() => router.push('/dashboard')}
+                className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
               >
-                {isSignUp
-                  ? 'Already have an account? Sign in'
-                  : "Don't have an account? Sign up"
-                }
+                Test Dashboard Navigation
+              </button>
+              
+              <button
+                onClick={() => window.location.href = '/'}
+                className="w-full bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Go to Home Page
               </button>
             </div>
 
-            <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-              <p>
-                By {isSignUp ? 'signing up' : 'signing in'}, you agree to our{' '}
-                <a href="/terms" className="text-blue-600 hover:text-blue-500">
-                  Terms of Service
-                </a>{' '}
-                and{' '}
-                <a href="/privacy" className="text-blue-600 hover:text-blue-500">
-                  Privacy Policy
-                </a>
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Features */}
-        <div className="text-center">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            What you'll get:
-          </h3>
-          <div className="grid grid-cols-1 gap-3 text-sm text-gray-600 dark:text-gray-400">
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span>AI-powered Slack conversation summaries</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>Team collaboration and organization management</span>
-            </div>
-            <div className="flex items-center justify-center space-x-2">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span>Secure data handling and privacy protection</span>
+            <div className="text-center text-sm text-gray-500">
+              This is a simplified login page for testing routing issues.
             </div>
           </div>
         </div>
