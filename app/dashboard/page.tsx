@@ -1,83 +1,130 @@
-'use client';
-
-import { useEffect, useState } from 'react';
+"use client";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function DashboardPage() {
-  const [mounted, setMounted] = useState(false);
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true);
-    console.log('🎯 Dashboard page mounted successfully');
+    console.log('🎯 Dashboard: Starting session check...');
+
+    // Using the singleton supabase client from lib/supabase
+
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log("📊 Dashboard session check:", { session, error });
+
+      if (error) {
+        console.error("❌ Session error:", error);
+        setError(error.message);
+      } else {
+        console.log("✅ Session retrieved:", session ? "User logged in" : "No session");
+        setSession(session);
+      }
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("🔄 Auth state change:", event, session ? "Session exists" : "No session");
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  if (!mounted) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Loading dashboard...</p>
+          <p>🔄 Loading session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md w-full">
+          <h1 className="text-xl font-bold text-red-900 mb-4">❌ Session Error</h1>
+          <p className="text-red-800 mb-4">{error}</p>
+          <button
+            onClick={() => window.location.href = '/login'}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 max-w-md w-full">
+          <h1 className="text-xl font-bold text-yellow-900 mb-4">🔐 No Session</h1>
+          <p className="text-yellow-800 mb-4">No active session found. Please log in.</p>
+          <button
+            onClick={() => window.location.href = '/login'}
+            className="bg-yellow-600 text-white px-4 py-2 rounded hover:bg-yellow-700"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+    <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          🎉 Dashboard Loaded Successfully!
+          ✅ Dashboard - Session Active
         </h1>
 
         <div className="bg-white rounded-lg shadow p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Debug Information</h2>
+          <h2 className="text-xl font-semibold mb-4">Session Debug Information</h2>
           <div className="space-y-2 text-sm">
             <p>✅ Dashboard page is rendering correctly</p>
-            <p>✅ React component mounted successfully</p>
-            <p>✅ No routing issues detected</p>
-            <p>🕐 Timestamp: {new Date().toISOString()}</p>
+            <p>✅ Session retrieved successfully</p>
+            <p>✅ User authenticated: {session.user?.email}</p>
+            <p>🕐 Session expires: {new Date(session.expires_at * 1000).toISOString()}</p>
+            <p>🔑 Provider: {session.user?.app_metadata?.provider || 'email'}</p>
           </div>
         </div>
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">
-            Next Steps for Full Dashboard
+        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+          <h3 className="text-lg font-semibold text-green-900 mb-2">
+            Session Details
           </h3>
-          <ul className="text-blue-800 space-y-1">
-            <li>• Add session authentication check</li>
-            <li>• Integrate with AuthProvider</li>
-            <li>• Load user data and organizations</li>
-            <li>• Display Slack integrations</li>
-            <li>• Show recent summaries</li>
-          </ul>
+          <pre className="text-xs bg-gray-100 p-2 mt-2 rounded overflow-auto max-h-64">
+            {JSON.stringify(session, null, 2)}
+          </pre>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="font-semibold text-gray-900 mb-2">Total Summaries</h3>
-            <p className="text-3xl font-bold text-blue-600">42</p>
-            <p className="text-sm text-gray-500">Mock data</p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="font-semibold text-gray-900 mb-2">Slack Workspaces</h3>
-            <p className="text-3xl font-bold text-green-600">1</p>
-            <p className="text-sm text-gray-500">Connected</p>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h3 className="font-semibold text-gray-900 mb-2">This Month</h3>
-            <p className="text-3xl font-bold text-purple-600">12</p>
-            <p className="text-sm text-gray-500">New summaries</p>
-          </div>
-        </div>
-
-        <div className="mt-8 text-center">
-          <a
-            href="/login"
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+        <div className="flex gap-4">
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
           >
-            Go to Login
-          </a>
+            🔄 Refresh Page
+          </button>
+          <button
+            onClick={() => {
+              supabase.auth.signOut().then(() => {
+                window.location.href = '/login';
+              });
+            }}
+            className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            🚪 Sign Out
+          </button>
         </div>
       </div>
     </div>
