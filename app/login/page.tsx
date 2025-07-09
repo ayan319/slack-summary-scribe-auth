@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@supabase/auth-helpers-nextjs";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -11,7 +13,10 @@ export default function LoginPage() {
   const [message, setMessage] = useState("");
 
   const handleSignIn = async () => {
+    console.log("🔘 Login: Sign In button clicked");
+
     if (!email || !password) {
+      console.log("❌ Login: Missing credentials");
       setError("Please enter both email and password");
       return;
     }
@@ -22,6 +27,12 @@ export default function LoginPage() {
 
     try {
       console.log("🔑 Login: Attempting sign in with", email);
+      console.log("🔧 Login: Environment check:", {
+        hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...'
+      });
+
       const supabase = createBrowserSupabaseClient();
       
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -37,18 +48,20 @@ export default function LoginPage() {
       
       console.log("✅ Login: Sign in successful", {
         user: data.user?.email,
-        hasSession: !!data.session
+        hasSession: !!data.session,
+        sessionId: data.session?.access_token?.substring(0, 20) + '...'
       });
-      
+
       setMessage("Success! Redirecting to dashboard...");
-      
+
       // Check if cookies were set
       console.log("🍪 Login: Checking cookies...");
-      
-      // Redirect after a short delay to ensure cookies are set
-      setTimeout(() => {
-        window.location.href = "/dashboard";
-      }, 1000);
+      const cookies = document.cookie;
+      console.log("🍪 Login: Current cookies:", cookies);
+
+      // Use router.push for client-side navigation
+      console.log("🚀 Login: Navigating to dashboard with router.push");
+      router.push("/dashboard");
       
     } catch (err) {
       console.error("❌ Login: Exception during sign in:", err);
@@ -59,11 +72,14 @@ export default function LoginPage() {
   };
 
   const handleGoogleSignIn = async () => {
+    console.log("🔘 Login: Google Sign In button clicked");
+
     setLoading(true);
     setError("");
     setMessage("Redirecting to Google...");
 
     try {
+      console.log("🔧 Login: Creating Supabase client for Google OAuth");
       const supabase = createBrowserSupabaseClient();
       
       const { data, error } = await supabase.auth.signInWithOAuth({
@@ -176,7 +192,10 @@ export default function LoginPage() {
         <div className="mt-6 pt-4 border-t border-gray-200">
           <button
             className="w-full text-gray-600 hover:text-gray-800 text-sm py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50"
-            onClick={() => window.location.href = '/dashboard'}
+            onClick={() => {
+              console.log("🔍 Debug: Test Dashboard button clicked - using router.push");
+              router.push('/dashboard');
+            }}
             type="button"
           >
             🔍 Test Dashboard (Debug)

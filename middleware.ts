@@ -30,15 +30,30 @@ export async function middleware(request: NextRequest) {
     '/privacy',
     '/terms',
     '/support',
-    '/auth/callback',
+    '/auth/callback'
+  ];
+
+  // API routes that don't require authentication
+  const publicApiRoutes = [
     '/api/auth/callback',
+    '/api/auth/login',
+    '/api/auth/signup',
+    '/api/auth/logout',
     '/api/healthcheck'
   ];
 
   // Check if current path is public
-  const isPublicRoute = publicRoutes.some(route => pathname === route || pathname.startsWith('/api/'));
+  const isPublicRoute = publicRoutes.some(route => pathname === route);
+  const isPublicApiRoute = publicApiRoutes.some(route => pathname.startsWith(route));
 
-  if (isPublicRoute) {
+  console.log('🔍 Middleware: Route check:', {
+    pathname,
+    isPublicRoute,
+    isPublicApiRoute,
+    isPublic: isPublicRoute || isPublicApiRoute
+  });
+
+  if (isPublicRoute || isPublicApiRoute) {
     console.log('✅ Middleware: Public route, allowing access to:', pathname);
     return response;
   }
@@ -75,18 +90,30 @@ export async function middleware(request: NextRequest) {
 
     const { data: { session }, error } = await supabase.auth.getSession();
 
+    console.log('🔍 Middleware: Session check result:', {
+      hasSession: !!session,
+      hasError: !!error,
+      userEmail: session?.user?.email,
+      sessionId: session?.access_token?.substring(0, 20) + '...',
+      pathname
+    });
+
     if (error) {
-      console.error('🔍 Middleware: Session error:', error);
+      console.error('❌ Middleware: Session error:', error.message);
+      const redirectUrl = new URL('/login', request.url);
+      redirectUrl.searchParams.set('redirectTo', pathname);
+      redirectUrl.searchParams.set('error', 'session_error');
+      return NextResponse.redirect(redirectUrl);
     }
 
     if (!session) {
-      console.log('🔍 Middleware: No session found, redirecting to login from:', pathname);
+      console.log('🚪 Middleware: No session found, redirecting to login from:', pathname);
       const redirectUrl = new URL('/login', request.url);
       redirectUrl.searchParams.set('redirectTo', pathname);
       return NextResponse.redirect(redirectUrl);
     }
 
-    console.log('✅ Middleware: Authenticated user accessing:', pathname);
+    console.log('✅ Middleware: Authenticated user accessing:', pathname, 'User:', session.user?.email);
     return response;
 
   } catch (error) {

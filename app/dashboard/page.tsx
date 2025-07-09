@@ -73,6 +73,38 @@ function DashboardPage() {
 
   const { open: isCreateOrgOpen, openModal: openCreateOrg, closeModal: closeCreateOrg } = useCreateOrganizationModal();
 
+  // Add comprehensive session logging
+  useEffect(() => {
+    console.log('🏠 Dashboard: Component mounted, checking session...');
+    console.log('📊 Dashboard: Auth state:', {
+      hasUser: !!user,
+      userEmail: user?.email,
+      userId: user?.id,
+      userName: user?.name,
+      hasCurrentOrg: !!currentOrganization,
+      currentOrgName: currentOrganization?.name,
+      totalOrgs: organizations.length,
+      loading
+    });
+
+    // Check Supabase environment variables
+    console.log('🔧 Dashboard: Environment check:', {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...',
+    });
+
+    // Check cookies
+    if (typeof window !== 'undefined') {
+      const cookies = document.cookie;
+      const supabaseCookies = cookies.split(';').filter(cookie =>
+        cookie.includes('sb-') || cookie.includes('supabase')
+      );
+      console.log('🍪 Dashboard: Supabase cookies found:', supabaseCookies.length);
+      console.log('🍪 Dashboard: All cookies:', cookies.split(';').length);
+    }
+  }, [user, currentOrganization, organizations, loading]);
+
   const fetchDashboardData = useCallback(async () => {
     if (!currentOrganization) return;
 
