@@ -11,8 +11,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing required Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY');
 }
 
-if (!supabaseServiceKey) {
-  console.warn('SUPABASE_SERVICE_ROLE_KEY not found - admin operations will be disabled');
+if (!supabaseServiceKey && process.env.NODE_ENV === 'development') {
+  console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY not found - admin operations will be disabled');
 }
 
 // Singleton pattern to prevent multiple GoTrueClient warnings

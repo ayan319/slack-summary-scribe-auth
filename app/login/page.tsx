@@ -102,30 +102,40 @@ export default function LoginPage() {
         });
 
         const result = await response.json();
+        console.log('📝 Signup response:', result);
 
         if (result.success) {
           if (result.needsVerification) {
             setSuccess('Please check your email to confirm your account before signing in.');
           } else {
             setSuccess('Account created successfully! Redirecting...');
-            // Check if user is now authenticated
-            const user = await getCurrentUser();
-            if (user) {
-              setTimeout(() => router.push('/dashboard'), 1000);
+
+            // If we have a session, the user is automatically logged in
+            if (result.session) {
+              console.log('✅ User has session, redirecting to dashboard');
+              // Force a page refresh to ensure auth state is updated
+              window.location.href = '/dashboard';
             } else {
+              // No session, but account created - switch to login
               setSuccess('Account created! Please sign in to continue.');
-              setIsSignUp(false); // Switch to login mode
+              setIsSignUp(false);
             }
           }
         } else {
+          console.log('❌ Signup failed:', result.error);
           setError(result.error || 'Failed to create account');
         }
       } else {
+        console.log('🔐 Attempting login for:', formData.email);
         const result = await signInWithEmail(formData.email, formData.password);
+        console.log('📝 Login response:', result);
+
         if (result.success) {
           setSuccess('Signed in successfully! Redirecting...');
-          setTimeout(() => router.push('/dashboard'), 1000);
+          // Force a page refresh to ensure auth state is updated
+          window.location.href = '/dashboard';
         } else {
+          console.log('❌ Login failed:', result.error);
           setError(result.error || 'Failed to sign in');
         }
       }
