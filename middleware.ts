@@ -30,6 +30,7 @@ export async function middleware(request: NextRequest) {
     '/privacy',
     '/terms',
     '/support',
+    '/auth/callback',
     '/api/auth/callback',
     '/api/healthcheck'
   ];
@@ -98,19 +99,16 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Temporarily disable middleware for debugging
-  matcher: [],
-  
-  // Original matcher configuration:
-  // matcher: [
-  //   /*
-  //    * Match all request paths except for the ones starting with:
-  //    * - api (API routes)
-  //    * - _next/static (static files)
-  //    * - _next/image (image optimization files)
-  //    * - favicon.ico (favicon file)
-  //    * - public folder
-  //    */
-  //   '/((?!api|_next/static|_next/image|favicon.ico|public|robots.txt|sitemap.xml).*)',
-  // ],
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     * - robots.txt, sitemap.xml
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|public|robots.txt|sitemap.xml).*)',
+  ],
 };

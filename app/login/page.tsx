@@ -173,11 +173,20 @@ export default function LoginPage() {
           </button>
         </div>
         
-        <p className="text-xs text-center text-gray-500 mt-6">
+        <div className="mt-6 pt-4 border-t border-gray-200">
+          <button
+            className="w-full text-gray-600 hover:text-gray-800 text-sm py-2 px-4 border border-gray-300 rounded-md hover:bg-gray-50"
+            onClick={() => window.location.href = '/dashboard'}
+            type="button"
+          >
+            🔍 Test Dashboard (Debug)
+          </button>
+        </div>
+
+        <p className="text-xs text-center text-gray-500 mt-4">
           This is a simplified login page for debugging purposes.
         </p>
       </div>
     </div>
   );
-}
 }
