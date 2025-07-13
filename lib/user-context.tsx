@@ -25,10 +25,19 @@ export function UserProvider({ children }: UserProviderProps) {
   const refreshUser = async () => {
     try {
       setIsLoading(true);
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
+
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('User fetch timeout')), 8000)
+      );
+
+      const userPromise = getCurrentUser();
+      const currentUser = await Promise.race([userPromise, timeoutPromise]);
+      setUser(currentUser as AuthUser);
     } catch (error) {
-      console.error('Error refreshing user:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error refreshing user:', error);
+      }
       setUser(null);
     } finally {
       setIsLoading(false);

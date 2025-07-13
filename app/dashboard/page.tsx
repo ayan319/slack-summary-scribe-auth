@@ -95,7 +95,7 @@ function DashboardContent() {
 
   const fetchDashboardData = useCallback(async () => {
     if (!user) {
-      console.log('🔐 No user found, redirecting to login');
+      setLoading(false);
       router.push('/login');
       return;
     }
@@ -104,18 +104,22 @@ function DashboardContent() {
       setLoading(true);
       setError(null);
 
-      console.log('📊 Fetching dashboard data for user:', user.email);
+      // Add timeout to prevent infinite loading
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
       const response = await fetch('/api/dashboard', {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // Include cookies for session
+        credentials: 'include',
+        signal: controller.signal
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         if (response.status === 401) {
-          console.log('🔐 Unauthorized, redirecting to login');
           router.push('/login');
           return;
         }
@@ -125,26 +129,39 @@ function DashboardContent() {
       }
 
       const result = await response.json();
-      console.log('📊 Dashboard data fetched successfully');
       setData(result.data);
     } catch (err) {
-      console.error('📊 Dashboard fetch error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
-      setError(errorMessage);
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('Request timed out. Please refresh the page.');
+      } else {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }
   }, [user, router]);
 
   useEffect(() => {
+    // Add timeout to prevent infinite loading states
+    const loadingTimeout = setTimeout(() => {
+      if (loading && !error) {
+        setError('Loading timed out. Please refresh the page.');
+        setLoading(false);
+      }
+    }, 15000); // 15 second timeout for overall loading
+
     if (!userLoading) {
       if (user) {
         fetchDashboardData();
       } else {
+        setLoading(false);
         router.replace('/login');
       }
     }
-  }, [userLoading, user, fetchDashboardData, router]);
+
+    return () => clearTimeout(loadingTimeout);
+  }, [userLoading, user, fetchDashboardData, router, loading, error]);
 
   const handleSignOut = async () => {
     try {
@@ -191,7 +208,10 @@ function DashboardContent() {
       // Refresh dashboard data to show new summary
       fetchDashboardData();
     } catch (error) {
-      console.error('Summarization error:', error);
+      // Log error for debugging in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Summarization error:', error);
+      }
       setSummaryError(error instanceof Error ? error.message : 'Failed to generate summary');
     } finally {
       setIsProcessing(false);

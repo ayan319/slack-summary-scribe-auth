@@ -51,16 +51,16 @@ export default function NotFound() {
                   Sign in to your account
                 </Link>
                 <Link
-                  href="/help"
+                  href="/support"
                   className="text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  Visit our help center
+                  Visit our support center
                 </Link>
                 <Link
-                  href="/contact"
+                  href="/pricing"
                   className="text-blue-600 dark:text-blue-400 hover:underline"
                 >
-                  Contact support
+                  View pricing plans
                 </Link>
               </div>
             </div>

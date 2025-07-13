@@ -1,6 +1,36 @@
-# 🚀 Vercel Deployment Guide
+# 🚀 VERCEL DEPLOYMENT GUIDE
 
-## ✅ Pre-Deployment Checklist
+## ✅ STEP 1: PREPARE YOUR REPO FOR DEPLOYMENT
+1️⃣ Open your terminal in your project folder.
+2️⃣ Run:
+```bash
+git status
+```
+to ensure there are no pending changes.
+3️⃣ If there are changes:
+```bash
+git add .
+git commit -m "Prepare production deployment to Vercel"
+git push origin main
+```
+✅ Confirm the repository on GitHub is up-to-date.
+
+## 🔗 STEP 2: CONNECT TO VERCEL
+
+1. **Go to Vercel Dashboard**: [vercel.com](https://vercel.com)
+2. **Sign in** with your GitHub account
+3. **Click "New Project"**
+4. **Select your repository**: `slack-summary-scribe-auth`
+5. **Click "Import"**
+
+## ⚙️ STEP 3: CONFIGURE PROJECT SETTINGS
+
+- **Framework Preset**: Next.js (auto-detected)
+- **Root Directory**: `./` (default)
+- **Build Command**: `npm run build` (auto-detected)
+- **Output Directory**: `.next` (auto-detected)
+
+## 🔑 STEP 4: ENVIRONMENT VARIABLES SETUP
 
 ### **1. Environment Variables Setup**
 Configure these in Vercel Dashboard → Settings → Environment Variables:

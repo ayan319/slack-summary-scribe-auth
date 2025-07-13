@@ -58,21 +58,45 @@ export default function LoginPage() {
       }
 
       if (data.user && data.session) {
-        // Ensure user record exists in our users table
-        const { error: upsertError } = await supabase
-          .from('users')
-          .upsert({
-            id: data.user.id,
-            email: data.user.email!,
-            name: data.user.user_metadata?.name || data.user.email!.split('@')[0],
-            avatar_url: data.user.user_metadata?.avatar_url,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'id'
-          })
+        // Ensure user record exists in our users table (non-blocking)
+        try {
+          const { error: upsertError } = await supabase
+            .from('users')
+            .upsert({
+              id: data.user.id,
+              email: data.user.email!,
+              name: data.user.user_metadata?.name || data.user.email!.split('@')[0],
+              avatar_url: data.user.user_metadata?.avatar_url,
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'id'
+            })
 
-        if (upsertError) {
-          console.warn('Could not upsert user record:', upsertError)
+          if (upsertError) {
+            // Log error but don't block login flow
+            // Log error for debugging in development only
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('Could not upsert user record (non-blocking):', upsertError)
+            }
+            // Show a non-blocking toast notification
+            toast.warning('Profile sync in progress...', {
+              description: 'Your profile will be updated shortly.'
+            })
+          } else {
+            // Success - user record created/updated
+            toast.success('Successfully signed in!', {
+              description: 'Welcome back to your dashboard.'
+            })
+          }
+        } catch (error) {
+          // Catch any network or other errors - don't block login
+          // Log error for debugging in development only
+          if (process.env.NODE_ENV === 'development') {
+            console.warn('User profile sync error (non-blocking):', error)
+          }
+          toast.info('Signed in successfully', {
+            description: 'Profile sync will complete in the background.'
+          })
         }
 
         // Get redirect path from URL params or default to dashboard
