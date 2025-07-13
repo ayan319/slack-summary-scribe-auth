@@ -1,0 +1,42 @@
+{
+  "name": "Slack Summary Scribe",
+  "tagline": "AI-powered Slack summaries that keep your team in sync",
+  "description": "Never miss important Slack conversations again. Our AI creates intelligent summaries of your channels, helping remote teams stay connected and productive.",
+  "website": "http://localhost:3000",
+  "categories": [
+    "Productivity",
+    "Artificial Intelligence",
+    "SaaS",
+    "Remote Work",
+    "Communication"
+  ],
+  "pricing": "Freemium",
+  "launch_date": "2025-07-20",
+  "gallery_assets": [
+    "dashboard-screenshot.png",
+    "slack-integration.png",
+    "ai-summary-example.png",
+    "mobile-app.png",
+    "analytics-dashboard.png"
+  ],
+  "makers": [
+    "@yourhandle"
+  ],
+  "features": [
+    "🤖 AI-powered Slack summaries",
+    "⚡ Real-time conversation analysis",
+    "📊 Team productivity insights",
+    "🔔 Smart notification system",
+    "💼 Enterprise-grade security",
+    "📱 Mobile-friendly dashboard",
+    "🔗 Easy Slack integration",
+    "📈 Usage analytics"
+  ],
+  "benefits": [
+    "Save 2+ hours daily on communication",
+    "Never miss important updates",
+    "Improve team alignment",
+    "Reduce meeting overhead",
+    "Boost remote team productivity"
+  ]
+}

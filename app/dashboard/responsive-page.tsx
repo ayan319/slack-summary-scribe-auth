@@ -7,8 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useAuth, withAuth } from '@/components/providers/AuthProvider';
-import { signOut } from '@/lib/auth';
+// Auth removed - demo mode
 import OrganizationSwitcher from '@/components/OrganizationSwitcher';
 import CreateOrganizationModal, { useCreateOrganizationModal } from '@/components/CreateOrganizationModal';
 import InviteTeamModal from '@/components/InviteTeamModal';
@@ -37,7 +36,9 @@ import {
 import type { DashboardStats, SlackIntegration, RecentSummary } from './constants';
 
 function DashboardPage() {
-  const { user, currentOrganization, organizations } = useAuth();
+  const [user, setUser] = useState<any>(null);
+  const [currentOrganization, setCurrentOrganization] = useState<any>(null);
+  const [organizations, setOrganizations] = useState<any[]>([]);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [slackIntegrations, setSlackIntegrations] = useState<SlackIntegration[]>([]);
   const [recentSummaries, setRecentSummaries] = useState<RecentSummary[]>([]);
@@ -136,12 +137,9 @@ function DashboardPage() {
   };
 
   const handleLogout = async () => {
-    try {
-      await signOut();
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+    // Demo mode - just redirect to home
+    console.log('🚪 Logout (demo mode)');
+    router.push('/');
   };
 
   const handleConnectSlack = async () => {
@@ -489,6 +487,5 @@ function DashboardPage() {
   );
 }
 
-// Export the wrapped component
-const WrappedDashboardPage = withAuth(DashboardPage, { requireOrganization: true });
-export default WrappedDashboardPage;
+// Export the component directly (no auth wrapper needed)
+export default DashboardPage;

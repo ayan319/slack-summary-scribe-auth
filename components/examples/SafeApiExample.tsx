@@ -25,7 +25,7 @@ export function SafeApiExample() {
       });
 
       if (response.success) {
-        setResult(`✅ Success: ${response.data?.message || 'User created successfully'}`);
+        setResult(`✅ Success: ${(response.data as { message?: string })?.message || 'User created successfully'}`);
       } else {
         setError(`❌ Error: ${response.error || 'Unknown error'}`);
       }
@@ -50,7 +50,7 @@ export function SafeApiExample() {
       });
 
       if (response.success) {
-        setResult(`✅ Success: ${response.data?.message || 'Subscription created successfully'}`);
+        setResult(`✅ Success: ${(response.data as { message?: string })?.message || 'Subscription created successfully'}`);
       } else {
         setError(`❌ Error: ${response.error || 'Unknown error'}`);
       }
@@ -73,7 +73,7 @@ export function SafeApiExample() {
       });
 
       if (response.success) {
-        setResult(`✅ Success: ${response.data?.message || 'Login successful'}`);
+        setResult(`✅ Success: ${(response.data as { message?: string })?.message || 'Login successful'}`);
       } else {
         setError(`❌ Error: ${response.error || 'Unknown error'} (Status: ${response.status})`);
       }

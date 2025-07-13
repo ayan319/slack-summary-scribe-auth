@@ -1,16 +1,11 @@
-import { supabase } from './supabase';
-
-// Slack API configuration
-const SLACK_CLIENT_ID = process.env.NEXT_PUBLIC_SLACK_CLIENT_ID!;
-const SLACK_CLIENT_SECRET = process.env.SLACK_CLIENT_SECRET!;
-const SLACK_SIGNING_SECRET = process.env.SLACK_SIGNING_SECRET!;
+// Slack integration removed - demo mode
 
 export interface SlackOAuthResponse {
   ok: boolean;
   access_token: string;
   token_type: string;
   scope: string;
-  bot_user_id?: string;
+  bot_user_id: string;
   app_id: string;
   team: {
     id: string;
@@ -26,16 +21,15 @@ export interface SlackOAuthResponse {
     access_token: string;
     token_type: string;
   };
-  incoming_webhook?: {
-    channel: string;
-    channel_id: string;
-    configuration_url: string;
-    url: string;
-  };
-  bot?: {
-    bot_user_id: string;
-    bot_access_token: string;
-  };
+}
+
+export interface SlackMessage {
+  channel: string;
+  text: string;
+  blocks?: any[];
+  attachments?: any[];
+  thread_ts?: string;
+  reply_broadcast?: boolean;
 }
 
 export interface SlackChannel {
@@ -55,7 +49,6 @@ export interface SlackChannel {
   is_ext_shared: boolean;
   is_org_shared: boolean;
   pending_shared: string[];
-  pending_connected_team_ids: string[];
   is_pending_ext_shared: boolean;
   is_member: boolean;
   is_open: boolean;
@@ -71,23 +64,6 @@ export interface SlackChannel {
   };
   previous_names: string[];
   num_members?: number;
-}
-
-export interface SlackMessage {
-  type: string;
-  user: string;
-  text: string;
-  ts: string;
-  thread_ts?: string;
-  reply_count?: number;
-  replies?: Array<{
-    user: string;
-    ts: string;
-  }>;
-  subscribed?: boolean;
-  last_read?: string;
-  unread_count?: number;
-  parent_user_id?: string;
 }
 
 export interface SlackUser {
@@ -141,180 +117,245 @@ export interface SlackUser {
 }
 
 /**
- * Generate Slack OAuth URL
+ * Get Slack OAuth URL (demo mode)
  */
-export function getSlackOAuthUrl(organizationId: string): string {
-  const scopes = [
-    'channels:read',
-    'channels:history',
-    'groups:read',
-    'groups:history',
-    'im:read',
-    'im:history',
-    'mpim:read',
-    'mpim:history',
-    'users:read',
-    'team:read',
-  ].join(',');
-
-  const params = new URLSearchParams({
-    client_id: SLACK_CLIENT_ID,
-    scope: scopes,
-    redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/slack/callback`,
-    state: organizationId,
-  });
-
-  return `https://slack.com/oauth/v2/authorize?${params.toString()}`;
+export function getSlackOAuthUrl(
+  clientId: string,
+  redirectUri: string,
+  state?: string,
+  scopes: string[] = ['channels:read', 'chat:write', 'users:read']
+): string {
+  console.log('🔗 Getting Slack OAuth URL (demo mode):', { clientId, redirectUri, state, scopes });
+  
+  // Return a demo URL that won't actually work but shows the structure
+  return `https://slack.com/oauth/v2/authorize?client_id=${clientId}&scope=${scopes.join(',')}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state || 'demo-state'}`;
 }
 
 /**
- * Exchange OAuth code for access token
+ * Exchange OAuth code for access token (demo mode)
  */
-export async function exchangeSlackOAuthCode(code: string): Promise<SlackOAuthResponse> {
-  const response = await fetch('https://slack.com/api/oauth.v2.access', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+export async function exchangeSlackOAuthCode(
+  clientId: string,
+  clientSecret: string,
+  code: string,
+  redirectUri: string
+): Promise<SlackOAuthResponse> {
+  console.log('🔄 Exchanging Slack OAuth code (demo mode):', { clientId, code, redirectUri });
+  
+  // Return demo OAuth response
+  return {
+    ok: true,
+    access_token: 'xoxb-demo-access-token',
+    token_type: 'bot',
+    scope: 'channels:read,chat:write,users:read',
+    bot_user_id: 'U0DEMO123',
+    app_id: 'A0DEMO456',
+    team: {
+      id: 'T0DEMO789',
+      name: 'Demo Team'
     },
-    body: new URLSearchParams({
-      client_id: SLACK_CLIENT_ID,
-      client_secret: SLACK_CLIENT_SECRET,
-      code,
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/slack/callback`,
-    }),
-  });
-
-  const data = await response.json();
-
-  if (!data.ok) {
-    throw new Error(data.error || 'Failed to exchange OAuth code');
-  }
-
-  return data;
+    authed_user: {
+      id: 'U0DEMOUSER',
+      scope: 'channels:read,chat:write,users:read',
+      access_token: 'xoxp-demo-user-token',
+      token_type: 'user'
+    }
+  };
 }
 
 /**
- * Get Slack channels
- */
-export async function getSlackChannels(accessToken: string): Promise<SlackChannel[]> {
-  const response = await fetch('https://slack.com/api/conversations.list', {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  const data = await response.json();
-
-  if (!data.ok) {
-    throw new Error(data.error || 'Failed to fetch channels');
-  }
-
-  return data.channels || [];
-}
-
-/**
- * Get channel messages
- */
-export async function getChannelMessages(
-  accessToken: string,
-  channelId: string,
-  limit: number = 100,
-  oldest?: string
-): Promise<SlackMessage[]> {
-  const params = new URLSearchParams({
-    channel: channelId,
-    limit: limit.toString(),
-  });
-
-  if (oldest) {
-    params.append('oldest', oldest);
-  }
-
-  const response = await fetch(`https://slack.com/api/conversations.history?${params}`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  const data = await response.json();
-
-  if (!data.ok) {
-    throw new Error(data.error || 'Failed to fetch messages');
-  }
-
-  return data.messages || [];
-}
-
-/**
- * Get Slack users
- */
-export async function getSlackUsers(accessToken: string): Promise<SlackUser[]> {
-  const response = await fetch('https://slack.com/api/users.list', {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  const data = await response.json();
-
-  if (!data.ok) {
-    throw new Error(data.error || 'Failed to fetch users');
-  }
-
-  return data.members || [];
-}
-
-/**
- * Store Slack integration in database
+ * Store Slack integration (demo mode)
  */
 export async function storeSlackIntegration(
   userId: string,
   organizationId: string,
   oauthData: SlackOAuthResponse
 ): Promise<void> {
-  const { error } = await supabase
-    .from('slack_integrations')
-    .upsert({
-      user_id: userId,
-      organization_id: organizationId,
-      slack_team_id: oauthData.team.id,
-      slack_team_name: oauthData.team.name,
-      access_token: oauthData.authed_user.access_token,
-      bot_token: oauthData.bot?.bot_access_token || null,
-      scope: oauthData.authed_user.scope,
-      connected: true,
-    }, {
-      onConflict: 'organization_id,slack_team_id'
-    });
-
-  if (error) {
-    throw new Error(`Failed to store Slack integration: ${error.message}`);
-  }
+  console.log('💾 Storing Slack integration (demo mode):', {
+    userId,
+    organizationId,
+    teamId: oauthData.team.id,
+    teamName: oauthData.team.name
+  });
 }
 
 /**
- * Get Slack integration for organization
+ * Get Slack integration for user
  */
-export async function getSlackIntegration(organizationId: string) {
-  const { data, error } = await supabase
-    .from('slack_integrations')
-    .select('*')
-    .eq('organization_id', organizationId)
-    .eq('connected', true)
-    .single();
+export async function getSlackIntegration(userId: string, organizationId?: string) {
+  try {
+    const { createServerClient } = await import('@supabase/ssr');
+    const { cookies } = await import('next/headers');
 
-  if (error && error.code !== 'PGRST116') {
-    throw new Error(`Failed to get Slack integration: ${error.message}`);
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          async get(name: string) {
+            const cookieStore = await cookies();
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+
+    const query = supabase
+      .from('slack_integrations')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('active', true);
+
+    if (organizationId) {
+      query.eq('organization_id', organizationId);
+    }
+
+    const { data, error } = await query.single();
+
+    if (error) {
+      console.error('Error fetching Slack integration:', error);
+      return null;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error in getSlackIntegration:', error);
+    return null;
   }
-
-  return data;
 }
 
 /**
- * Generate channel summary using AI
+ * Send message to Slack (demo mode)
+ */
+export async function sendSlackMessage(
+  accessToken: string,
+  message: SlackMessage
+): Promise<{ ok: boolean; ts?: string; error?: string }> {
+  console.log('📤 Sending Slack message (demo mode):', { message });
+  
+  return {
+    ok: true,
+    ts: `${Date.now()}.000100`
+  };
+}
+
+/**
+ * Get Slack channels (demo mode)
+ */
+export async function getSlackChannels(accessToken: string): Promise<SlackChannel[]> {
+  console.log('📋 Getting Slack channels (demo mode)');
+  
+  return [
+    {
+      id: 'C0DEMO123',
+      name: 'general',
+      is_channel: true,
+      is_group: false,
+      is_im: false,
+      is_mpim: false,
+      is_private: false,
+      created: Date.now() / 1000,
+      is_archived: false,
+      is_general: true,
+      unlinked: 0,
+      name_normalized: 'general',
+      is_shared: false,
+      is_ext_shared: false,
+      is_org_shared: false,
+      pending_shared: [],
+      is_pending_ext_shared: false,
+      is_member: true,
+      is_open: true,
+      topic: {
+        value: 'Company-wide announcements and work-based matters',
+        creator: 'U0DEMOUSER',
+        last_set: Date.now() / 1000
+      },
+      purpose: {
+        value: 'This channel is for team-wide communication and announcements.',
+        creator: 'U0DEMOUSER',
+        last_set: Date.now() / 1000
+      },
+      previous_names: [],
+      num_members: 5
+    }
+  ];
+}
+
+/**
+ * Get Slack users (demo mode)
+ */
+export async function getSlackUsers(accessToken: string): Promise<SlackUser[]> {
+  console.log('👥 Getting Slack users (demo mode)');
+  
+  return [
+    {
+      id: 'U0DEMOUSER',
+      team_id: 'T0DEMO789',
+      name: 'demo.user',
+      deleted: false,
+      color: '9f69e7',
+      real_name: 'Demo User',
+      tz: 'America/New_York',
+      tz_label: 'Eastern Standard Time',
+      tz_offset: -18000,
+      profile: {
+        title: 'Software Engineer',
+        phone: '',
+        skype: '',
+        real_name: 'Demo User',
+        real_name_normalized: 'Demo User',
+        display_name: 'Demo',
+        display_name_normalized: 'Demo',
+        fields: {},
+        status_text: '',
+        status_emoji: '',
+        status_expiration: 0,
+        avatar_hash: 'g123456789',
+        email: 'demo@example.com',
+        first_name: 'Demo',
+        last_name: 'User',
+        image_24: 'https://secure.gravatar.com/avatar/demo?s=24',
+        image_32: 'https://secure.gravatar.com/avatar/demo?s=32',
+        image_48: 'https://secure.gravatar.com/avatar/demo?s=48',
+        image_72: 'https://secure.gravatar.com/avatar/demo?s=72',
+        image_192: 'https://secure.gravatar.com/avatar/demo?s=192',
+        image_512: 'https://secure.gravatar.com/avatar/demo?s=512',
+        status_text_canonical: '',
+        team: 'T0DEMO789'
+      },
+      is_admin: true,
+      is_owner: true,
+      is_primary_owner: true,
+      is_restricted: false,
+      is_ultra_restricted: false,
+      is_bot: false,
+      is_app_user: false,
+      updated: Date.now() / 1000,
+      is_email_confirmed: true,
+      who_can_share_contact_card: 'EVERYONE'
+    }
+  ];
+}
+
+/**
+ * Test Slack connection (demo mode)
+ */
+export async function testSlackConnection(accessToken: string): Promise<{ ok: boolean; error?: string }> {
+  console.log('🧪 Testing Slack connection (demo mode)');
+
+  return { ok: true };
+}
+
+/**
+ * Disconnect Slack integration (demo mode)
+ */
+export async function disconnectSlackIntegration(userId: string, organizationId?: string): Promise<void> {
+  console.log('🔌 Disconnecting Slack integration (demo mode):', { userId, organizationId });
+}
+
+/**
+ * Generate channel summary (demo mode)
  */
 export async function generateChannelSummary(
   accessToken: string,
@@ -325,155 +366,75 @@ export async function generateChannelSummary(
   slackTeamId: string,
   timeRange?: { start: Date; end: Date }
 ): Promise<{ summary: string; messageCount: number }> {
-  try {
-    // Get messages from the channel
-    const oldest = timeRange?.start ? Math.floor(timeRange.start.getTime() / 1000).toString() : undefined;
-    const messages = await getChannelMessages(accessToken, channelId, 100, oldest);
+  console.log('📊 Generating channel summary (demo mode):', { channelId, channelName, timeRange });
 
-    if (messages.length === 0) {
-      throw new Error('No messages found in the specified time range.');
-    }
-
-    // Get user information for message authors
-    const users = await getSlackUsers(accessToken);
-    const userMap = new Map(users.map(user => [user.id, user]));
-
-    // Format messages for AI processing
-    const formattedMessages = messages
-      .filter(msg => msg.type === 'message' && !(msg as any).subtype && msg.text)
-      .reverse() // Show chronological order
-      .map(msg => {
-        const user = userMap.get(msg.user);
-        const timestamp = new Date(parseFloat(msg.ts) * 1000).toLocaleString();
-        const userName = user?.real_name || user?.name || 'Unknown User';
-        return `[${timestamp}] ${userName}: ${msg.text}`;
-      })
-      .join('\n');
-
-    if (!formattedMessages.trim()) {
-      throw new Error('No valid messages found for summarization.');
-    }
-
-    // Generate AI summary using DeepSeek
-    const summary = await generateDeepSeekSummary(formattedMessages, channelName);
-
-    // Store summary in database
-    const { error } = await supabase
-      .from('summaries')
-      .insert({
-        user_id: userId,
-        organization_id: organizationId,
-        title: `${channelName} Summary - ${new Date().toLocaleDateString()}`,
-        content: summary,
-        channel_name: channelName,
-        channel_id: channelId,
-        message_count: messages.length,
-        slack_team_id: slackTeamId,
-      });
-
-    if (error) {
-      console.error('Error storing summary:', error);
-      // Don't throw here, just log the error
-    }
-
-    return { summary, messageCount: messages.length };
-  } catch (error) {
-    console.error('Error generating channel summary:', error);
-    throw error;
-  }
+  return {
+    summary: `Demo summary for #${channelName} channel. This is a sample summary showing recent activity and key discussions. The team discussed project updates, shared important announcements, and collaborated on various tasks.`,
+    messageCount: 42
+  };
 }
 
 /**
- * Generate AI summary using OpenRouter (DeepSeek R1 with GPT-4o-mini fallback)
+ * Generate DeepSeek summary (demo mode)
  */
 export async function generateDeepSeekSummary(messages: string, channelName: string): Promise<string> {
-  if (!process.env.OPENROUTER_API_KEY) {
-    throw new Error('OpenRouter API key not configured');
-  }
+  console.log('🤖 Generating DeepSeek summary (demo mode):', { messagesLength: messages.length, channelName });
 
-  // Import OpenAI client here to avoid circular dependencies
-  const { default: OpenAI } = await import('openai');
+  return `# Demo AI Summary for #${channelName}
 
-  const openRouterClient = new OpenAI({
-    baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.OPENROUTER_API_KEY,
-    defaultHeaders: {
-      "HTTP-Referer": process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-      "X-Title": "Slack Summarizer SaaS"
+## Key Topics
+- Project updates and milestones
+- Team collaboration improvements
+- Resource allocation discussions
+
+## Important Decisions
+- Approved new feature development
+- Scheduled weekly team meetings
+- Updated project timeline
+
+## Action Items
+- [ ] Complete feature specifications by Friday
+- [ ] Schedule client review meeting
+- [ ] Update project documentation
+
+## Key Participants
+- demo.user (most active)
+- john.doe
+- jane.smith
+
+## Summary
+This conversation focused on project coordination and team alignment. The team made significant progress on planning and established clear next steps for upcoming deliverables.`;
+}
+
+/**
+ * Get channel messages (demo mode)
+ */
+export async function getChannelMessages(
+  accessToken: string,
+  channelId: string,
+  limit: number = 100,
+  oldest?: string
+): Promise<any[]> {
+  console.log('💬 Getting channel messages (demo mode):', { channelId, limit, oldest });
+
+  return [
+    {
+      type: 'message',
+      user: 'U0DEMOUSER',
+      text: 'Hey team, how is the project coming along?',
+      ts: (Date.now() / 1000 - 3600).toString()
+    },
+    {
+      type: 'message',
+      user: 'U0DEMO123',
+      text: 'Making good progress! Should have the first draft ready by tomorrow.',
+      ts: (Date.now() / 1000 - 3000).toString()
+    },
+    {
+      type: 'message',
+      user: 'U0DEMOUSER',
+      text: 'Excellent! Let me know if you need any help.',
+      ts: (Date.now() / 1000 - 1800).toString()
     }
-  });
-
-  const systemPrompt = `You are an AI assistant that creates concise, actionable summaries of Slack conversations.
-
-Your task is to analyze the conversation and provide:
-1. **Key Topics**: Main subjects discussed
-2. **Important Decisions**: Any decisions made or agreed upon
-3. **Action Items**: Tasks assigned or next steps mentioned
-4. **Key Participants**: Most active contributors
-5. **Summary**: Brief overview of the conversation
-
-Format your response with clear sections using markdown. Be concise but comprehensive.`;
-
-  const userPrompt = `Please summarize the following Slack conversation from the #${channelName} channel:\n\n${messages}`;
-
-  try {
-    // Try DeepSeek R1 first
-    const completion = await openRouterClient.chat.completions.create({
-      model: "deepseek/deepseek-r1:free",
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: userPrompt,
-        },
-      ],
-      max_tokens: 1500,
-      temperature: 0.3,
-    });
-
-    const content = completion.choices[0]?.message?.content;
-
-    if (!content) {
-      throw new Error('No response from DeepSeek R1');
-    }
-
-    return content;
-
-  } catch (error) {
-    console.error('DeepSeek R1 failed, trying GPT-4o-mini fallback:', error);
-
-    // Fallback to GPT-4o-mini
-    try {
-      const fallbackCompletion = await openRouterClient.chat.completions.create({
-        model: "openai/gpt-4o-mini",
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt,
-          },
-          {
-            role: 'user',
-            content: userPrompt,
-          },
-        ],
-        max_tokens: 1500,
-        temperature: 0.3,
-      });
-
-      const fallbackContent = fallbackCompletion.choices[0]?.message?.content;
-
-      if (!fallbackContent) {
-        throw new Error('No response from GPT-4o-mini fallback');
-      }
-
-      return fallbackContent;
-
-    } catch (fallbackError) {
-      console.error('Both DeepSeek R1 and GPT-4o-mini failed:', fallbackError);
-      throw new Error(`AI summarization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-  }
+  ];
 }

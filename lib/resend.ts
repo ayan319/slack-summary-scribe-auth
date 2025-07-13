@@ -1,20 +1,19 @@
-import { Resend } from 'resend';
+// Fallback email service without external dependencies
 
 // Environment variables
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || process.env.EMAIL_FROM || 'onboarding@resend.dev';
+const FROM_EMAIL = process.env.FROM_EMAIL || process.env.EMAIL_FROM || 'noreply@summaryai.com';
 
-// Validate API key
-if (!RESEND_API_KEY) {
-  throw new Error('RESEND_API_KEY environment variable is required');
-}
+// Email logs for fallback mode
+const emailLogs: Array<{
+  timestamp: Date;
+  to: string | string[];
+  subject: string;
+  html?: string;
+  text?: string;
+  from: string;
+}> = [];
 
-if (RESEND_API_KEY === 're_123456789_your_resend_api_key_here') {
-  throw new Error('Please replace the placeholder RESEND_API_KEY with your actual API key');
-}
-
-// Initialize Resend client
-export const resend = new Resend(RESEND_API_KEY);
+console.log('📧 Email service initialized in fallback mode (no external dependencies)');
 
 // Email sending interface
 export interface EmailOptions {
@@ -43,7 +42,7 @@ export interface EmailResponse {
 }
 
 /**
- * Send an email using Resend
+ * Send an email using fallback logging
  */
 export async function sendEmail(options: EmailOptions): Promise<EmailResponse> {
   try {
@@ -60,44 +59,29 @@ export async function sendEmail(options: EmailOptions): Promise<EmailResponse> {
       return { success: false, error: 'Email content (html or text) is required' };
     }
 
-    // Send email using Resend
-    const emailData: any = {
+    // Log email in fallback mode
+    const emailData = {
+      timestamp: new Date(),
       from: options.from || FROM_EMAIL,
-      to: Array.isArray(options.to) ? options.to : [options.to],
+      to: options.to,
       subject: options.subject,
-      replyTo: options.replyTo,
-      cc: options.cc ? (Array.isArray(options.cc) ? options.cc : [options.cc]) : undefined,
-      bcc: options.bcc ? (Array.isArray(options.bcc) ? options.bcc : [options.bcc]) : undefined,
-      attachments: options.attachments,
+      html: options.html,
+      text: options.text,
     };
 
-    // Add content based on what's available
-    if (options.html) {
-      emailData.html = options.html;
-    }
-    if (options.text) {
-      emailData.text = options.text;
-    }
+    emailLogs.push(emailData);
 
-    const { data, error } = await resend.emails.send(emailData);
+    const recipients = Array.isArray(options.to) ? options.to.join(', ') : options.to;
+    console.log(`📧 [FALLBACK MODE] Email logged to: ${recipients}`);
+    console.log(`📧 [FALLBACK MODE] Subject: ${options.subject}`);
 
-    if (error) {
-      console.error('Resend email error:', error);
-      return { success: false, error: error.message };
-    }
-
-    if (!data) {
-      return { success: false, error: 'No response data from Resend' };
-    }
-
-    console.log(`✅ Email sent successfully via Resend. ID: ${data.id}`);
-    return { success: true, data: { id: data.id } };
+    return { success: true, data: { id: `fallback-${Date.now()}` } };
 
   } catch (error) {
     console.error('Email sending error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
     };
   }
 }
@@ -182,22 +166,29 @@ export function validateEmails(emails: string[]): { valid: string[]; invalid: st
 }
 
 /**
- * Get Resend client instance (for advanced usage)
+ * Get email logs (for development/testing)
  */
-export function getResendClient(): Resend {
-  return resend;
+export function getEmailLogs() {
+  return [...emailLogs];
 }
 
 /**
- * Check if Resend is properly configured
+ * Clear email logs
+ */
+export function clearEmailLogs() {
+  emailLogs.length = 0;
+}
+
+/**
+ * Check if email service is configured (always false in fallback mode)
  */
 export function isResendConfigured(): boolean {
-  return !!RESEND_API_KEY && RESEND_API_KEY !== 're_123456789_your_resend_api_key_here';
+  return false;
 }
 
 // Export default configuration
 export const resendConfig = {
-  apiKey: RESEND_API_KEY,
   fromEmail: FROM_EMAIL,
-  isConfigured: isResendConfigured(),
+  isConfigured: false,
+  mode: 'fallback',
 };

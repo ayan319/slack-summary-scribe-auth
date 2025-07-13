@@ -1,74 +1,115 @@
-'use client';
+'use client'
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useUser } from '@/lib/user-context'
+import { Loader2 } from 'lucide-react'
 
 interface AuthGuardProps {
-  children: React.ReactNode;
-  requireAuth?: boolean;
-  redirectTo?: string;
+  children: React.ReactNode
+  redirectTo?: string
+  fallback?: React.ReactNode
 }
 
-export default function AuthGuard({ 
-  children, 
-  requireAuth = true, 
-  redirectTo = '/login' 
+export default function AuthGuard({
+  children,
+  redirectTo = '/login',
+  fallback
 }: AuthGuardProps) {
-  const [loading, setLoading] = useState(true);
-  const [authenticated, setAuthenticated] = useState(false);
-  const router = useRouter();
+  const { user, isLoading: userLoading } = useUser()
+  const router = useRouter()
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    checkAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
-      setAuthenticated(!!session);
-      setLoading(false);
-
-      if (requireAuth && !session) {
-        router.push(redirectTo);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [requireAuth, redirectTo, router]);
-
-  const checkAuth = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      setAuthenticated(!!session);
-      
-      if (requireAuth && !session) {
-        router.push(redirectTo);
-      }
-    } catch (error) {
-      console.error('Auth check error:', error);
-      setAuthenticated(false);
-      if (requireAuth) {
-        router.push(redirectTo);
-      }
-    } finally {
-      setLoading(false);
+    // Wait for auth state to be determined
+    if (!userLoading) {
+      setIsLoading(false)
     }
-  };
+  }, [userLoading])
 
-  if (loading) {
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push(redirectTo)
+    }
+  }, [user, isLoading, router, redirectTo])
+
+  // Show loading state while determining auth status
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Loading...</span>
+      fallback || (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
         </div>
-      </div>
-    );
+      )
+    )
   }
 
-  if (requireAuth && !authenticated) {
-    return null; // Will redirect
+  // Show loading state while redirecting
+  if (!user) {
+    return (
+      fallback || (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Redirecting to login...</p>
+          </div>
+        </div>
+      )
+    )
   }
 
-  return <>{children}</>;
+  // User is authenticated, render children
+  return <>{children}</>
+}
+
+// Higher-order component version for easier usage
+export function withAuthGuard<P extends object>(
+  Component: React.ComponentType<P>,
+  options?: {
+    redirectTo?: string
+    fallback?: React.ReactNode
+  }
+) {
+  return function AuthGuardedComponent(props: P) {
+    return (
+      <AuthGuard 
+        redirectTo={options?.redirectTo} 
+        fallback={options?.fallback}
+      >
+        <Component {...props} />
+      </AuthGuard>
+    )
+  }
+}
+
+// Hook for checking auth status in components
+export function useAuthGuard() {
+  const { user, isAuthenticated } = useUser()
+  const router = useRouter()
+
+  const requireAuth = (redirectTo: string = '/login') => {
+    if (!user) {
+      router.push(redirectTo)
+      return false
+    }
+    return true
+  }
+
+  const requireNoAuth = (redirectTo: string = '/dashboard') => {
+    if (user) {
+      router.push(redirectTo)
+      return false
+    }
+    return true
+  }
+
+  return {
+    user,
+    isAuthenticated,
+    requireAuth,
+    requireNoAuth,
+  }
 }

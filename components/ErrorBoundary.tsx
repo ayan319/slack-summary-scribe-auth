@@ -82,11 +82,11 @@ function DefaultErrorFallback({ error, retry }: { error: Error; retry: () => voi
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mb-4">
-            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+          <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <AlertTriangle className="w-6 h-6 text-red-600" />
           </div>
           <CardTitle className="text-xl">Something went wrong</CardTitle>
           <CardDescription>
@@ -108,9 +108,13 @@ function DefaultErrorFallback({ error, retry }: { error: Error; retry: () => voi
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => window.location.href = '/'}
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.location.href = '/';
+                }
+              }}
               className="flex-1"
             >
               <Home className="w-4 h-4 mr-2" />
@@ -137,11 +141,11 @@ function DefaultErrorFallback({ error, retry }: { error: Error; retry: () => voi
 // Specific error fallbacks for different scenarios
 export function AuthErrorFallback({ error, retry }: { error: Error; retry: () => void }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mb-4">
-            <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+          <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <AlertTriangle className="w-6 h-6 text-red-600" />
           </div>
           <CardTitle>Authentication Error</CardTitle>
           <CardDescription>

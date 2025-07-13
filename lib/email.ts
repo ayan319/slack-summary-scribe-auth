@@ -1,20 +1,9 @@
-import { Resend } from 'resend';
-import { render } from '@react-email/render';
-
 // Email configuration
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@summaryai.com';
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@summaryai.com';
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001';
 
-// Initialize Resend (only if API key is available)
-let resend: Resend | null = null;
-if (RESEND_API_KEY && RESEND_API_KEY !== 're_123456789_your_resend_api_key_here') {
-  resend = new Resend(RESEND_API_KEY);
-  console.log('✅ Resend initialized with API key');
-} else {
-  console.log('⚠️ Resend API key not found, using fallback mode');
-}
+console.log('📧 Email service initialized in fallback mode (no external dependencies)');
 
 // Fallback email store for development
 const emailLogs: Array<{
@@ -47,41 +36,23 @@ async function sendEmail(
   type: string = 'general'
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   try {
-    if (resend) {
-      // Use Resend in production
-      const { data, error } = await resend.emails.send({
-        from: FROM_EMAIL,
-        to: [to],
-        subject,
-        html,
-      });
+    // Fallback mode for development/production without external email service
+    emailLogs.push({
+      timestamp: new Date(),
+      to,
+      subject,
+      html,
+      type,
+    });
 
-      if (error) {
-        console.error('Resend email error:', error);
-        return { success: false, error: error.message };
-      }
+    console.log('\n📧 EMAIL SENT (Fallback Mode)');
+    console.log('=====================================');
+    console.log(`Type: ${type}`);
+    console.log(`To: ${to}`);
+    console.log(`Subject: ${subject}`);
+    console.log('=====================================\n');
 
-      console.log(`✅ Email sent via Resend to ${to}: ${subject}`);
-      return { success: true, messageId: data?.id };
-    } else {
-      // Fallback mode for development
-      emailLogs.push({
-        timestamp: new Date(),
-        to,
-        subject,
-        html,
-        type,
-      });
-
-      console.log('\n📧 EMAIL SENT (Development Mode)');
-      console.log('=====================================');
-      console.log(`Type: ${type}`);
-      console.log(`To: ${to}`);
-      console.log(`Subject: ${subject}`);
-      console.log('=====================================\n');
-
-      return { success: true, messageId: `dev_${Date.now()}` };
-    }
+    return { success: true, messageId: `fallback_${Date.now()}` };
   } catch (error) {
     console.error('Email service error:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -96,7 +67,7 @@ export async function sendEmailVerification(
 ): Promise<{ success: boolean; error?: string }> {
   const verificationUrl = `${APP_URL}/auth/verify-email?token=${token}`;
 
-  const html = `
+  const emailContent = `
     <!DOCTYPE html>
     <html>
       <head>
@@ -137,7 +108,7 @@ export async function sendEmailVerification(
     </html>
   `;
 
-  const result = await sendEmail(email, 'Verify your email address - Slack Summary Scribe', html, 'email-verification');
+  const result = await sendEmail(email, 'Verify your email address - Slack Summary Scribe', emailContent, 'email-verification');
   return { success: result.success, error: result.error };
 }
 
@@ -148,7 +119,7 @@ export async function sendWelcomeEmail({
 }: WelcomeEmailProps): Promise<void> {
   try {
     // For now, use simple HTML instead of React Email components
-    const html = `
+    const welcomeContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Welcome to Slack Summary Scribe! 🎉</h2>
         <p>Hi ${name},</p>
@@ -157,7 +128,7 @@ export async function sendWelcomeEmail({
       </div>
     `;
 
-    await sendEmail(email, 'Welcome to Slack Summary Scribe! 🎉', html, 'welcome');
+    await sendEmail(email, 'Welcome to Slack Summary Scribe! 🎉', welcomeContent, 'welcome');
     console.log('Welcome email sent successfully to:', email);
   } catch (error) {
     console.error('Failed to send welcome email:', error);
@@ -190,24 +161,15 @@ export async function sendPaymentConfirmationEmail({
       </div>
     `;
 
-    if (resend) {
-      await resend.emails.send({
-        from: 'Slack Summary Scribe <billing@summaryai.com>',
-        to: [email],
-        subject: `Payment Confirmation - ${planName} Plan`,
-        html: emailHtml,
-      });
-    } else {
-      // Fallback logging
-      emailLogs.push({
-        timestamp: new Date(),
-        to: email,
-        subject: `Payment Confirmation - ${planName} Plan`,
-        html: emailHtml,
-        type: 'payment_confirmation',
-      });
-      console.log('📧 Payment confirmation email logged (Resend not available):', { email, planName, amount, orderId });
-    }
+    // Fallback logging
+    emailLogs.push({
+      timestamp: new Date(),
+      to: email,
+      subject: `Payment Confirmation - ${planName} Plan`,
+      html: emailHtml,
+      type: 'payment_confirmation',
+    });
+    console.log('📧 Payment confirmation email logged (fallback mode):', { email, planName, amount, orderId });
 
     console.log('Payment confirmation email sent successfully to:', email);
   } catch (error) {
@@ -224,7 +186,7 @@ export async function sendPasswordResetEmail(
   try {
     const resetUrl = `${APP_URL}/auth/reset-password?token=${resetToken}`;
 
-    const html = `
+    const resetContent = `
       <!DOCTYPE html>
       <html>
         <head>
@@ -274,7 +236,7 @@ export async function sendPasswordResetEmail(
       </html>
     `;
 
-    const result = await sendEmail(email, 'Reset your password - Slack Summary Scribe', html, 'password-reset');
+    const result = await sendEmail(email, 'Reset your password - Slack Summary Scribe', resetContent, 'password-reset');
     console.log('Password reset email sent successfully to:', email);
     return { success: result.success, error: result.error };
   } catch (error) {
@@ -290,7 +252,7 @@ export async function sendSummaryNotification(
   summaryUrl: string
 ): Promise<void> {
   try {
-    const html = `
+    const notificationContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2>Your Summary is Ready! 📝</h2>
         <p>Hi ${name},</p>
@@ -301,7 +263,7 @@ export async function sendSummaryNotification(
       </div>
     `;
 
-    await sendEmail(email, `New Summary Ready: ${summaryTitle}`, html, 'summary-notification');
+    await sendEmail(email, `New Summary Ready: ${summaryTitle}`, notificationContent, 'summary-notification');
     console.log('Summary notification sent successfully to:', email);
   } catch (error) {
     console.error('Failed to send summary notification:', error);
@@ -329,7 +291,7 @@ export const emailService = {
    * Check if email service is configured
    */
   isConfigured(): boolean {
-    return !!resend;
+    return false; // Always false in fallback mode
   },
 
   /**

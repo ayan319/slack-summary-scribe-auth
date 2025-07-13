@@ -2,7 +2,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import ConditionalFooter from '@/components/ConditionalFooter';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { AuthProvider } from '@/components/providers/AuthProvider';
+import { Providers } from '@/components/providers';
 // Import Sentry singleton client to ensure global initialization
 import '@/lib/sentry.client';
 import { metadata } from './metadata';
@@ -24,11 +24,12 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" />
       </head>
       <body className={`${inter.className} antialiased`}>
-        <ErrorBoundary>
-          <AuthProvider>
+        <Providers>
+          <ErrorBoundary>
             {children}
-          </AuthProvider>
-        </ErrorBoundary>
+            <ConditionalFooter />
+          </ErrorBoundary>
+        </Providers>
       </body>
     </html>
   );

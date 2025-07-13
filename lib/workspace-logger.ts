@@ -197,13 +197,18 @@ export class WorkspaceLogger {
       // For now, we'll use console and local storage
       
       // Store in localStorage for browser debugging (if available)
-      if (typeof window !== 'undefined') {
-        const existingLogs = JSON.parse(localStorage.getItem('workspace_logs') || '[]');
-        existingLogs.push(entry);
-        
-        // Keep only last 100 entries in localStorage
-        const recentLogs = existingLogs.slice(-100);
-        localStorage.setItem('workspace_logs', JSON.stringify(recentLogs));
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        try {
+          const existingLogs = JSON.parse(localStorage.getItem('workspace_logs') || '[]');
+          existingLogs.push(entry);
+
+          // Keep only last 100 entries in localStorage
+          const recentLogs = existingLogs.slice(-100);
+          localStorage.setItem('workspace_logs', JSON.stringify(recentLogs));
+        } catch (error) {
+          // Silently fail if localStorage is not available or quota exceeded
+          console.warn('Failed to store logs in localStorage:', error);
+        }
       }
 
     } catch (error) {

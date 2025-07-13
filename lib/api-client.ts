@@ -3,15 +3,17 @@
  * Prevents JSON parsing of HTML error pages and provides proper error handling
  */
 
-export interface ApiResponse<T = any> {
-  success: boolean;
-  data?: T;
-  message?: string;
-  error?: string;
+import type {
+  ApiResponse,
+  ApiError,
+  ApiRequestBody
+} from '../types/api';
+
+export interface SafeApiResponse<T = unknown> extends ApiResponse<T> {
   status: number;
 }
 
-export interface ApiError extends Error {
+export interface SafeApiError extends Error {
   status: number;
   response?: Response;
 }
@@ -19,10 +21,10 @@ export interface ApiError extends Error {
 /**
  * Safe fetch wrapper that handles common API errors
  */
-export async function safeFetch<T = any>(
+export async function safeFetch<T = unknown>(
   url: string,
   options: RequestInit = {}
-): Promise<ApiResponse<T>> {
+): Promise<SafeApiResponse<T>> {
   try {
     // Set default headers
     const defaultHeaders = {
@@ -113,14 +115,14 @@ export const apiClient = {
   /**
    * GET request
    */
-  get: async <T = any>(url: string, options: Omit<RequestInit, 'method'> = {}) => {
+  get: async <T = unknown>(url: string, options: Omit<RequestInit, 'method'> = {}) => {
     return safeFetch<T>(url, { ...options, method: 'GET' });
   },
 
   /**
    * POST request
    */
-  post: async <T = any>(url: string, data?: any, options: Omit<RequestInit, 'method' | 'body'> = {}) => {
+  post: async <T = unknown>(url: string, data?: ApiRequestBody, options: Omit<RequestInit, 'method' | 'body'> = {}) => {
     return safeFetch<T>(url, {
       ...options,
       method: 'POST',
@@ -131,7 +133,7 @@ export const apiClient = {
   /**
    * PUT request
    */
-  put: async <T = any>(url: string, data?: any, options: Omit<RequestInit, 'method' | 'body'> = {}) => {
+  put: async <T = unknown>(url: string, data?: ApiRequestBody, options: Omit<RequestInit, 'method' | 'body'> = {}) => {
     return safeFetch<T>(url, {
       ...options,
       method: 'PUT',
@@ -142,14 +144,14 @@ export const apiClient = {
   /**
    * DELETE request
    */
-  delete: async <T = any>(url: string, options: Omit<RequestInit, 'method'> = {}) => {
+  delete: async <T = unknown>(url: string, options: Omit<RequestInit, 'method'> = {}) => {
     return safeFetch<T>(url, { ...options, method: 'DELETE' });
   },
 
   /**
    * PATCH request
    */
-  patch: async <T = any>(url: string, data?: any, options: Omit<RequestInit, 'method' | 'body'> = {}) => {
+  patch: async <T = unknown>(url: string, data?: ApiRequestBody, options: Omit<RequestInit, 'method' | 'body'> = {}) => {
     return safeFetch<T>(url, {
       ...options,
       method: 'PATCH',

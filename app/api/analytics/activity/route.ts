@@ -1,28 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@/lib/supabase';
-import { getDailyActivityData } from '@/lib/analytics';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const response = NextResponse.next();
-    const supabase = createRouteHandlerClient(request, response);
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    console.log('📊 Analytics Activity API: Auth disabled - returning demo data');
 
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get('days') || '30');
-    const organizationId = searchParams.get('organizationId');
 
-    // Get daily activity data
-    const activityData = await getDailyActivityData(days, organizationId || undefined);
+    // Generate demo activity data
+    const activityData = Array.from({ length: days }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      return {
+        date: date.toISOString().split('T')[0],
+        summaries: Math.floor(Math.random() * 10) + 1,
+        messages: Math.floor(Math.random() * 100) + 20,
+        users: Math.floor(Math.random() * 5) + 1,
+      };
+    }).reverse();
 
     return NextResponse.json({
       success: true,

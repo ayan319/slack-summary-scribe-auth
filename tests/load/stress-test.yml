@@ -1,0 +1,146 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Baseline phase
+    - duration: 60
+      arrivalRate: 10
+      name: "Baseline"
+    
+    # Gradual ramp-up to stress levels
+    - duration: 180
+      arrivalRate: 10
+      rampTo: 200
+      name: "Ramp to stress"
+    
+    # Stress phase - high load
+    - duration: 300
+      arrivalRate: 200
+      name: "Stress phase"
+    
+    # Spike test - sudden high load
+    - duration: 60
+      arrivalRate: 500
+      name: "Spike test"
+    
+    # Recovery phase
+    - duration: 120
+      arrivalRate: 500
+      rampTo: 10
+      name: "Recovery"
+    
+    # Final baseline
+    - duration: 60
+      arrivalRate: 10
+      name: "Final baseline"
+
+  # Stress test thresholds (more lenient)
+  ensure:
+    - http.response_time.p95: 5000   # 95% within 5s under stress
+    - http.response_time.p99: 10000  # 99% within 10s under stress
+    - http.codes.200: 85             # 85% success rate under stress
+    - http.codes.500: 10             # Less than 10% server errors
+
+  # Memory and CPU monitoring
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+    publish-metrics:
+      - type: "cloudwatch"
+        region: "us-east-1"
+        namespace: "SlackSummaryScribe/LoadTest"
+        dimensions:
+          - name: "TestType"
+            value: "StressTest"
+
+scenarios:
+  # Heavy API usage
+  - name: "Heavy API Load"
+    weight: 40
+    flow:
+      - loop:
+          - get:
+              url: "/api/health"
+              name: "Health check burst"
+          - get:
+              url: "/api/subscription/status"
+              name: "Subscription status burst"
+              headers:
+                Authorization: "Bearer stress-test-token"
+          - post:
+              url: "/api/webhooks"
+              name: "Webhook burst"
+              headers:
+                Content-Type: "application/json"
+              json:
+                type: "test_notification"
+                data:
+                  stress: true
+                  timestamp: "{{ $timestamp }}"
+        count: 5  # Each user makes 5 rapid requests
+
+  # Database intensive operations
+  - name: "Database Stress"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/summaries"
+          name: "Create summary"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer stress-test-token"
+          json:
+            title: "Stress test summary {{ $randomString }}"
+            content: "This is a stress test summary with random content {{ $randomString }}"
+            type: "stress_test"
+      
+      - get:
+          url: "/api/summaries"
+          name: "List summaries"
+          headers:
+            Authorization: "Bearer stress-test-token"
+      
+      - get:
+          url: "/api/analytics"
+          name: "Analytics query"
+          headers:
+            Authorization: "Bearer stress-test-token"
+
+  # File processing stress
+  - name: "File Processing Stress"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/upload"
+          name: "Stress file upload"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer stress-test-token"
+          json:
+            fileName: "stress-test-{{ $randomString }}.pdf"
+            fileSize: 5242880  # 5MB
+            content: "{{ $randomString }}"
+      
+      - think: 1
+      
+      - get:
+          url: "/api/upload/status/{{ $randomString }}"
+          name: "Check upload status"
+          headers:
+            Authorization: "Bearer stress-test-token"
+
+  # Memory intensive operations
+  - name: "Memory Stress"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/ai/summarize"
+          name: "AI summarization stress"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer stress-test-token"
+          json:
+            text: "{{ $randomString }}{{ $randomString }}{{ $randomString }}{{ $randomString }}"
+            model: "stress-test"
+            options:
+              maxTokens: 1000
+              temperature: 0.7

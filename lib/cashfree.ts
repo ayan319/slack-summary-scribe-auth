@@ -7,10 +7,6 @@ interface CashfreeStatic {
   XClientId: string;
   XClientSecret: string;
   XEnvironment: string;
-  Environment: {
-    PRODUCTION: string;
-    SANDBOX: string;
-  };
 }
 
 // Initialize Cashfree with proper typing
@@ -18,8 +14,8 @@ const CashfreeTyped = Cashfree as unknown as CashfreeStatic;
 CashfreeTyped.XClientId = process.env.CASHFREE_APP_ID!;
 CashfreeTyped.XClientSecret = process.env.CASHFREE_SECRET_KEY!;
 CashfreeTyped.XEnvironment = process.env.NODE_ENV === 'production'
-  ? CashfreeTyped.Environment.PRODUCTION
-  : CashfreeTyped.Environment.SANDBOX;
+  ? 'PRODUCTION'
+  : 'SANDBOX';
 
 // Cashfree configuration
 export const cashfreeConfig = {
@@ -73,9 +69,16 @@ export interface CashfreeOrderRequest {
 
 // Generate unique order ID
 export function generateOrderId(userId: string, planId: string): string {
-  const timestamp = Date.now();
+  // Use crypto.randomUUID if available for better randomness
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    const uuid = crypto.randomUUID().replace(/-/g, '').substring(0, 8);
+    return `sub_${userId.substring(0, 8)}_${planId}_${uuid}`;
+  }
+
+  // Fallback for environments without crypto.randomUUID
+  const timestamp = typeof window !== 'undefined' ? Date.now() : Math.floor(Math.random() * 1000000);
   const random = Math.random().toString(36).substring(2, 8);
-  return `sub_${userId}_${planId}_${timestamp}_${random}`;
+  return `sub_${userId.substring(0, 8)}_${planId}_${timestamp}_${random}`;
 }
 
 // Generate customer ID from email

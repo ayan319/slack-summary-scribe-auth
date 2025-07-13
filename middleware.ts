@@ -1,141 +1,133 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { SECURITY_CONFIG } from '@/lib/security';
+
+// Public routes that don't require authentication
+const PUBLIC_ROUTES = [
+  '/',
+  '/login',
+  '/signup',
+  '/pricing',
+  '/about',
+  '/privacy',
+  '/terms',
+  '/api/health',
+  '/api/auth/callback',
+  '/api/slack/callback'
+];
+
+// Protected routes that require authentication
+const PROTECTED_ROUTES = [
+  '/dashboard',
+  '/upload',
+  '/settings',
+  '/onboarding',
+  '/slack/connect'
+];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  let response = NextResponse.next();
+  const response = NextResponse.next();
 
   console.log('🔍 Middleware: Processing request for:', pathname);
 
   // Add comprehensive security headers for all requests
-  Object.entries(SECURITY_CONFIG.SECURITY_HEADERS).forEach(([key, value]) => {
+  const securityHeaders = {
+    // Content Security Policy
+    'Content-Security-Policy': [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live https://va.vercel-scripts.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "img-src 'self' data: https: blob:",
+      "connect-src 'self' https://api.openrouter.ai https://*.supabase.co https://*.sentry.io wss://*.supabase.co",
+      "frame-src 'self' https://js.stripe.com https://hooks.stripe.com",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      "upgrade-insecure-requests"
+    ].join('; '),
+
+    // Security headers
+    'X-Frame-Options': 'DENY',
+    'X-Content-Type-Options': 'nosniff',
+    'X-XSS-Protection': '1; mode=block',
+    'Referrer-Policy': 'strict-origin-when-cross-origin',
+    'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+
+    // HSTS (only in production with HTTPS)
+    ...(process.env.NODE_ENV === 'production' && {
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload'
+    })
+  };
+
+  Object.entries(securityHeaders).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
 
-  // Rate limiting for API routes
-  if (pathname.startsWith('/api/')) {
-    response.headers.set('X-RateLimit-Limit', '100');
-    response.headers.set('X-RateLimit-Remaining', '99');
-    response.headers.set('X-RateLimit-Reset', String(Date.now() + 60000));
-  }
-
-  // Public routes that don't require authentication
-  const publicRoutes = [
-    '/',
-    '/login',
-    '/signup',
-    '/pricing',
-    '/privacy',
-    '/terms',
-    '/support',
-    '/auth/callback'
-  ];
-
-  // API routes that don't require authentication
-  const publicApiRoutes = [
-    '/api/auth/callback',
-    '/api/auth/login',
-    '/api/auth/signup',
-    '/api/auth/logout',
-    '/api/healthcheck'
-  ];
-
-  // Check if current path is public
-  const isPublicRoute = publicRoutes.some(route => pathname === route);
-  const isPublicApiRoute = publicApiRoutes.some(route => pathname.startsWith(route));
-
-  console.log('🔍 Middleware: Route check:', {
-    pathname,
-    isPublicRoute,
-    isPublicApiRoute,
-    isPublic: isPublicRoute || isPublicApiRoute
-  });
-
-  if (isPublicRoute || isPublicApiRoute) {
+  // Skip authentication for public routes and static files
+  if (PUBLIC_ROUTES.includes(pathname) ||
+      pathname.startsWith('/_next/') ||
+      pathname.startsWith('/api/') ||
+      pathname.includes('.')) {
     console.log('✅ Middleware: Public route, allowing access to:', pathname);
     return response;
   }
 
-  // For protected routes, check authentication
-  try {
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value;
+  // Check authentication for protected routes
+  if (PROTECTED_ROUTES.some(route => pathname.startsWith(route))) {
+    try {
+      const supabase = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          cookies: {
+            get(name: string) {
+              return request.cookies.get(name)?.value;
+            },
+            set(name: string, value: string, options: any) {
+              response.cookies.set(name, value, options);
+            },
+            remove(name: string, options: any) {
+              response.cookies.delete(name);
+            },
           },
-          set(name: string, value: string, options: CookieOptions) {
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
-            });
-            response.cookies.set({ name, value, ...options });
-          },
-          remove(name: string, options: CookieOptions) {
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
-            });
-            response.cookies.set({ name, value: '', ...options });
-          },
-        },
+        }
+      );
+
+      const { data: { session }, error } = await supabase.auth.getSession();
+
+      if (error || !session) {
+        console.log('🔒 Middleware: No valid session, redirecting to login');
+        const loginUrl = new URL('/login', request.url);
+        loginUrl.searchParams.set('redirect', pathname);
+        return NextResponse.redirect(loginUrl);
       }
-    );
 
-    const { data: { session }, error } = await supabase.auth.getSession();
-
-    console.log('🔍 Middleware: Session check result:', {
-      hasSession: !!session,
-      hasError: !!error,
-      userEmail: session?.user?.email,
-      sessionId: session?.access_token?.substring(0, 20) + '...',
-      pathname
-    });
-
-    if (error) {
-      console.error('❌ Middleware: Session error:', error.message);
-      const redirectUrl = new URL('/login', request.url);
-      redirectUrl.searchParams.set('redirectTo', pathname);
-      redirectUrl.searchParams.set('error', 'session_error');
-      return NextResponse.redirect(redirectUrl);
+      console.log('✅ Middleware: Authenticated user accessing:', pathname);
+    } catch (error) {
+      console.error('🔒 Middleware: Auth check failed:', error);
+      const loginUrl = new URL('/login', request.url);
+      loginUrl.searchParams.set('redirect', pathname);
+      return NextResponse.redirect(loginUrl);
     }
-
-    if (!session) {
-      console.log('🚪 Middleware: No session found, redirecting to login from:', pathname);
-      const redirectUrl = new URL('/login', request.url);
-      redirectUrl.searchParams.set('redirectTo', pathname);
-      return NextResponse.redirect(redirectUrl);
-    }
-
-    console.log('✅ Middleware: Authenticated user accessing:', pathname, 'User:', session.user?.email);
-    return response;
-
-  } catch (error) {
-    console.error('🔍 Middleware: Auth check failed:', error);
-    // On error, redirect to login
-    const redirectUrl = new URL('/login', request.url);
-    redirectUrl.searchParams.set('redirectTo', pathname);
-    return NextResponse.redirect(redirectUrl);
   }
+
+  console.log('✅ Middleware: Security headers applied, allowing access to:', pathname);
+  return response;
 }
 
 export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder
-     * - robots.txt, sitemap.xml
+     * - public folder files
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public|robots.txt|sitemap.xml).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

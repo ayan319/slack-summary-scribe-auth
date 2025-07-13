@@ -1,0 +1,37 @@
+[
+  {
+    "phase": "Pre-Launch (T-7 days)",
+    "tasks": [
+      "Finalize Product Hunt submission",
+      "Prepare social media content",
+      "Reach out to early supporters",
+      "Test all systems end-to-end",
+      "Brief team on launch day plan"
+    ]
+  },
+  {
+    "phase": "Launch Day (T-0)",
+    "tasks": [
+      "12:01 AM PST: Product Hunt goes live",
+      "6:00 AM: Social media announcement",
+      "8:00 AM: Email to subscriber list",
+      "10:00 AM: Reach out to press contacts",
+      "12:00 PM: Community engagement push",
+      "3:00 PM: Influencer outreach",
+      "6:00 PM: Team celebration post",
+      "9:00 PM: Final push for votes"
+    ]
+  },
+  {
+    "phase": "Post-Launch (T+1 to T+7)",
+    "tasks": [
+      "Thank you posts to supporters",
+      "Share results and metrics",
+      "Follow up with press contacts",
+      "Analyze launch performance",
+      "Plan next growth initiatives",
+      "Implement user feedback",
+      "Prepare investor updates"
+    ]
+  }
+]

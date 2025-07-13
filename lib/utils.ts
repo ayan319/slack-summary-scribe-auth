@@ -36,7 +36,19 @@ export function truncateText(text: string, maxLength: number): string {
 }
 
 export function generateId(): string {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36)
+  // Use crypto.randomUUID if available (modern browsers and Node.js 16+)
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+
+  // Fallback for older environments - but avoid during SSR
+  if (typeof window === 'undefined') {
+    // Server-side: use a simple counter-based approach
+    return `id-${Math.floor(Math.random() * 1000000)}`;
+  }
+
+  // Client-side: use timestamp + random
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
 export function sleep(ms: number): Promise<void> {
@@ -111,14 +123,14 @@ export function copyToClipboard(text: string): Promise<void> {
   if (navigator.clipboard) {
     return navigator.clipboard.writeText(text)
   }
-  
+
   // Fallback for older browsers
   const textArea = document.createElement("textarea")
   textArea.value = text
   document.body.appendChild(textArea)
   textArea.focus()
   textArea.select()
-  
+
   try {
     document.execCommand("copy")
     return Promise.resolve()
@@ -127,4 +139,16 @@ export function copyToClipboard(text: string): Promise<void> {
   } finally {
     document.body.removeChild(textArea)
   }
+}
+
+export function formatBytes(bytes: number, decimals: number = 2): string {
+  if (bytes === 0) return '0 Bytes'
+
+  const k = 1024
+  const dm = decimals < 0 ? 0 : decimals
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
 }

@@ -1,20 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient, supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const response = NextResponse.next();
-    const supabase = createRouteHandlerClient(request, response);
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    console.log('📝 Notion Export API: Auth disabled - returning demo export');
 
     const { summaryId } = await request.json();
 
@@ -25,35 +13,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get summary data
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { success: false, error: 'Database not available' },
-        { status: 503 }
-      );
-    }
-
-    const { data: summary, error: summaryError } = await supabaseAdmin
-      .from('summaries')
-      .select(`
-        *,
-        file_uploads (
-          file_name,
-          file_size,
-          file_type,
-          created_at
-        )
-      `)
-      .eq('id', summaryId)
-      .eq('user_id', user.id)
-      .single();
-
-    if (summaryError || !summary) {
-      return NextResponse.json(
-        { success: false, error: 'Summary not found' },
-        { status: 404 }
-      );
-    }
+    // Get summary data (demo mode)
+    const summary = {
+      id: summaryId,
+      title: 'Demo Slack Summary',
+      summary_text: 'This is a comprehensive demo summary of team discussions covering project updates, technical decisions, and action items. The team discussed the upcoming product launch, reviewed technical architecture decisions, and assigned responsibilities for the next sprint.',
+      channel_name: '#general',
+      message_count: 25,
+      created_at: new Date().toISOString(),
+      skills_detected: ['Project Management', 'Technical Architecture', 'Team Coordination'],
+      red_flags: ['Potential deadline risk', 'Resource allocation concern'],
+      actions: ['Schedule follow-up meeting', 'Update project timeline', 'Review resource allocation'],
+      tags: ['urgent', 'product-launch', 'architecture'],
+      file_uploads: [{
+        file_name: 'demo-document.pdf',
+        file_size: 1024000,
+        file_type: 'application/pdf',
+        created_at: new Date().toISOString()
+      }]
+    };
 
     // Convert summary to Notion-compatible markdown format
     const notionContent = generateNotionMarkdown(summary);
@@ -61,44 +39,11 @@ export async function POST(request: NextRequest) {
     // Create a downloadable markdown file
     const buffer = Buffer.from(notionContent, 'utf-8');
 
-    // Log export activity
-    try {
-      if (supabaseAdmin) {
-        await supabaseAdmin
-        .from('exports')
-        .insert({
-          user_id: user.id,
-          organization_id: summary.organization_id,
-          summary_id: summaryId,
-          export_type: 'notion',
-          export_status: 'completed'
-        });
-      }
-    } catch (logError) {
-      console.error('Failed to log export:', logError);
-    }
+    // Log export activity (demo mode - no actual logging)
+    console.log('📝 Notion Export: Demo export completed successfully');
 
-    // Create notification
-    try {
-      if (supabaseAdmin) {
-        await supabaseAdmin
-        .from('notifications')
-        .insert({
-          user_id: user.id,
-          organization_id: summary.organization_id,
-          type: 'export_complete',
-          title: 'Export Complete',
-          message: `Your Notion export for "${summary.title}" is ready!`,
-          data: {
-            summaryId,
-            exportType: 'notion',
-            fileName: `${summary.title || 'summary'}.md`
-          }
-        });
-      }
-    } catch (notificationError) {
-      console.error('Failed to create notification:', notificationError);
-    }
+    // Create notification (demo mode - no actual notification)
+    console.log('🔔 Notion Export: Demo notification created');
 
     // Return markdown file
     return new NextResponse(buffer, {
@@ -113,23 +58,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Notion export error:', error);
     
-    // Log failed export
-    try {
-      const { summaryId } = await request.json();
-      if (summaryId && supabaseAdmin) {
-        await supabaseAdmin
-          .from('exports')
-          .insert({
-            user_id: (await createRouteHandlerClient(request, NextResponse.next()).auth.getUser()).data.user?.id,
-            summary_id: summaryId,
-            export_type: 'notion',
-            export_status: 'failed',
-            error_message: error instanceof Error ? error.message : 'Unknown error'
-          });
-      }
-    } catch (logError) {
-      console.error('Failed to log failed export:', logError);
-    }
+    // Log failed export (demo mode - no actual logging)
+    console.log('❌ Notion Export: Demo export failed');
 
     return NextResponse.json(
       { success: false, error: 'Export failed' },

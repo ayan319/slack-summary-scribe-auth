@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline - Slack Summary Scribe</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #333;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      max-width: 500px;
+      width: 100%;
+      animation: slideUp 0.6s ease-out;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .icon {
+      font-size: 64px;
+      margin-bottom: 24px;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-10px);
+      }
+      60% {
+        transform: translateY(-5px);
+      }
+    }
+
+    h1 {
+      color: #2563eb;
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .subtitle {
+      color: #6b7280;
+      font-size: 18px;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .description {
+      color: #4b5563;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    .features {
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 32px;
+      text-align: left;
+    }
+
+    .features h3 {
+      color: #1f2937;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .feature-list {
+      list-style: none;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+      color: #4b5563;
+      font-size: 14px;
+    }
+
+    .feature-list li:before {
+      content: "✓";
+      color: #059669;
+      font-weight: bold;
+      margin-right: 12px;
+      font-size: 16px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 16px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #d1d5db;
+    }
+
+    .btn-secondary:hover {
+      background: #e5e7eb;
+      transform: translateY(-2px);
+    }
+
+    .status {
+      margin-top: 24px;
+      padding: 16px;
+      background: #fef3c7;
+      border: 1px solid #fbbf24;
+      border-radius: 8px;
+      color: #92400e;
+      font-size: 14px;
+    }
+
+    .status.online {
+      background: #ecfdf5;
+      border-color: #d1fae5;
+      color: #065f46;
+    }
+
+    @media (max-width: 480px) {
+      .container {
+        padding: 24px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .subtitle {
+        font-size: 16px;
+      }
+
+      .buttons {
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">📱</div>
+    
+    <h1>You're Offline</h1>
+    
+    <p class="subtitle">
+      No internet connection detected
+    </p>
+    
+    <p class="description">
+      Don't worry! Slack Summary Scribe works offline too. You can still access your cached summaries and use many features while disconnected.
+    </p>
+    
+    <div class="features">
+      <h3>Available Offline</h3>
+      <ul class="feature-list">
+        <li>View previously loaded summaries</li>
+        <li>Access your dashboard</li>
+        <li>Browse cached content</li>
+        <li>Use the mobile app interface</li>
+        <li>Prepare content for when you're back online</li>
+      </ul>
+    </div>
+    
+    <div class="buttons">
+      <button class="btn btn-primary" onclick="tryAgain()">
+        🔄 Try Again
+      </button>
+      <a href="/dashboard" class="btn btn-secondary">
+        📊 Go to Dashboard
+      </a>
+    </div>
+    
+    <div class="status" id="status">
+      📡 Checking connection...
+    </div>
+  </div>
+
+  <script>
+    // Check online status
+    function updateStatus() {
+      const status = document.getElementById('status');
+      if (navigator.onLine) {
+        status.textContent = '✅ Back online! You can now use all features.';
+        status.className = 'status online';
+      } else {
+        status.textContent = '📡 Still offline. Some features may be limited.';
+        status.className = 'status';
+      }
+    }
+
+    // Try to reload the page
+    function tryAgain() {
+      if (navigator.onLine) {
+        window.location.reload();
+      } else {
+        // Show a message that we're still offline
+        const status = document.getElementById('status');
+        status.textContent = '📡 Still offline. Please check your internet connection.';
+        status.className = 'status';
+        
+        // Try again in a few seconds
+        setTimeout(() => {
+          if (navigator.onLine) {
+            window.location.reload();
+          }
+        }, 3000);
+      }
+    }
+
+    // Listen for online/offline events
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+
+    // Initial status check
+    updateStatus();
+
+    // Periodically check connection
+    setInterval(() => {
+      updateStatus();
+      
+      // Auto-reload if back online
+      if (navigator.onLine) {
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      }
+    }, 5000);
+
+    // Register service worker if not already registered
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((registration) => {
+          console.log('Service Worker registered from offline page');
+        })
+        .catch((error) => {
+          console.log('Service Worker registration failed:', error);
+        });
+    }
+
+    // Handle install prompt for PWA
+    let deferredPrompt;
+    
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      // Show install button
+      const installBtn = document.createElement('button');
+      installBtn.className = 'btn btn-primary';
+      installBtn.innerHTML = '📱 Install App';
+      installBtn.onclick = () => {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+          }
+          deferredPrompt = null;
+          installBtn.remove();
+        });
+      };
+      
+      document.querySelector('.buttons').appendChild(installBtn);
+    });
+  </script>
+</body>
+</html>

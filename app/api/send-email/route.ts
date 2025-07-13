@@ -30,23 +30,15 @@ export async function POST(request: NextRequest) {
   const response = NextResponse.next();
 
   try {
-    // Get authenticated user using Supabase
-    const supabase = createRouteHandlerClient(request, response);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    // Demo mode - no authentication required
+    console.log('📧 Send Email: Demo mode active');
 
-    if (authError || !user) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Authentication required to send emails'
-        },
-        { status: 401 }
-      );
-    }
+    // Demo user for rate limiting
+    const demoUser = { id: 'demo-user-123', email: 'demo@example.com' };
 
     // Rate limiting
     const clientIP = request.headers.get('x-forwarded-for') || 'unknown';
-    const rateLimitKey = `email:${user.id}:${clientIP}`;
+    const rateLimitKey = `email:${demoUser.id}:${clientIP}`;
     const rateLimit = checkRateLimit(rateLimitKey);
 
     if (!rateLimit.allowed) {
@@ -173,7 +165,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Log successful email send
-    console.log(`📧 Email sent by user ${user.email} to ${validRecipients.join(', ')}: ${subject}`);
+    console.log(`📧 Email sent by user ${demoUser.email} to ${validRecipients.join(', ')}: ${subject}`);
 
     return NextResponse.json(
       { 

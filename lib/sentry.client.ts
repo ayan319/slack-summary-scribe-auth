@@ -38,18 +38,19 @@ export function initializeSentry() {
   try {
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
+      environment: process.env.VERCEL_ENV || process.env.NODE_ENV || 'development',
+      release: process.env.VERCEL_GIT_COMMIT_SHA || process.env.npm_package_version || 'unknown',
 
-      // Adjust this value in production, or use tracesSampler for greater control
+      // Performance monitoring
       tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+      profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
 
-      // Setting this option to true will print useful information to the console while you're setting up Sentry.
+      // Debug mode
       debug: process.env.NODE_ENV === 'development',
 
+      // Session Replay for debugging
       replaysOnErrorSampleRate: 1.0,
-
-      // This sets the sample rate to be 10%. You may want this to be 100% while
-      // in development and sample at a lower rate in production
-      replaysSessionSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 0.1,
+      replaysSessionSampleRate: process.env.NODE_ENV === 'production' ? 0.01 : 0.1,
 
       // Enhanced integrations with breadcrumbs
       integrations: [
@@ -60,6 +61,8 @@ export function initializeSentry() {
         }),
         Sentry.browserTracingIntegration(),
       ],
+
+      // Note: OpenTelemetry warnings are expected from Sentry's auto-instrumentation
       
       // Enhanced error filtering and context
       beforeSend(event, hint) {

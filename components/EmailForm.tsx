@@ -9,11 +9,12 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle, XCircle, Mail, RefreshCw, Users } from 'lucide-react';
 import { sendEmail, type SendEmailRequest } from '@/lib/email-client';
-import { useAuth } from '@/components/providers/AuthProvider';
+// Auth removed - demo mode
 import { FormSkeleton } from '@/components/skeletons/AuthSkeleton';
 
 export default function EmailForm() {
-  const { user, currentOrganization } = useAuth();
+  const [user, setUser] = useState<any>(null);
+  const [currentOrganization, setCurrentOrganization] = useState<any>(null);
   const [formData, setFormData] = useState<SendEmailRequest>({
     to: '',
     subject: '',

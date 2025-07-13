@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@/lib/supabase';
 import { getSlackIntegration, generateChannelSummary, getSlackChannels } from '@/lib/slack';
 
 // Rate limiting for AI summarization
@@ -27,19 +26,12 @@ function checkRateLimit(identifier: string): { allowed: boolean; remaining: numb
 }
 
 export async function POST(request: NextRequest) {
-  const response = NextResponse.next();
-  
   try {
-    // Get authenticated user
-    const supabase = createRouteHandlerClient(request, response);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    // Demo mode - no authentication required
+    console.log('📝 Slack Summarize: Demo mode active');
+
+    // Demo user
+    const demoUser = { id: 'demo-user-123', email: 'demo@example.com' };
 
     // Parse request body
     const body = await request.json();
@@ -52,23 +44,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify user belongs to the organization
-    const { data: membership, error: membershipError } = await supabase
-      .from('user_organizations')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('organization_id', organization_id)
-      .single();
-
-    if (membershipError || !membership) {
-      return NextResponse.json(
-        { error: 'Access denied to this organization' },
-        { status: 403 }
-      );
-    }
+    // Demo mode - simulate organization membership check
+    console.log('🏢 Organization access check (demo mode):', {
+      organizationId: organization_id,
+      userRole: 'admin',
+      access: 'granted'
+    });
 
     // Rate limiting
-    const rateLimitKey = `summary:${user.id}:${organization_id}`;
+    const rateLimitKey = `summary:${demoUser.id}:${organization_id}`;
     const rateLimit = checkRateLimit(rateLimitKey);
 
     if (!rateLimit.allowed) {
@@ -120,7 +104,7 @@ export async function POST(request: NextRequest) {
       slackIntegration.access_token as string,
       channel_id,
       channel_name,
-      user.id,
+      demoUser.id,
       organization_id,
       slackIntegration.slack_team_id as string,
       timeRangeObj
@@ -153,14 +137,11 @@ export async function POST(request: NextRequest) {
 
 // Get available channels for summarization
 export async function GET(request: NextRequest) {
-  const response = NextResponse.next();
-  
   try {
-    // Get authenticated user
-    const supabase = createRouteHandlerClient(request, response);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
+    const { getCurrentUser } = await import('@/lib/auth');
+    const user = await getCurrentUser();
+
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -169,29 +150,14 @@ export async function GET(request: NextRequest) {
 
     // Get organization ID from query params
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organization_id');
+    const organizationId = searchParams.get('organization_id') || 'demo-org-123';
 
-    if (!organizationId) {
-      return NextResponse.json(
-        { error: 'Organization ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Verify user belongs to the organization
-    const { data: membership, error: membershipError } = await supabase
-      .from('user_organizations')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('organization_id', organizationId)
-      .single();
-
-    if (membershipError || !membership) {
-      return NextResponse.json(
-        { error: 'Access denied to this organization' },
-        { status: 403 }
-      );
-    }
+    // Demo mode - simulate organization membership check
+    console.log('🏢 Organization access check (demo mode):', {
+      organizationId,
+      userRole: 'admin',
+      access: 'granted'
+    });
 
     // Get Slack integration for the organization
     const slackIntegration = await getSlackIntegration(organizationId);

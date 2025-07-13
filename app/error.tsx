@@ -60,7 +60,11 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => window.location.href = '/'}
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.location.href = '/';
+                    }
+                  }}
                   className="flex-1"
                 >
                   <Home className="w-4 h-4 mr-2" />
@@ -70,7 +74,11 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
               <Button
                 variant="outline"
-                onClick={() => window.location.href = '/dashboard'}
+                onClick={() => {
+                  if (typeof window !== 'undefined') {
+                    window.location.href = '/dashboard';
+                  }
+                }}
                 className="w-full"
               >
                 Go to Dashboard

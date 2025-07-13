@@ -14,8 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Building2, AlertCircle, CheckCircle } from 'lucide-react';
-import { createOrganization } from '@/lib/auth';
-import { useAuth } from '@/components/providers/AuthProvider';
+// Auth removed - demo mode
 
 interface CreateOrganizationModalProps {
   open: boolean;
@@ -28,7 +27,9 @@ export default function CreateOrganizationModal({
   onOpenChange,
   onSuccess,
 }: CreateOrganizationModalProps) {
-  const { user, refreshOrganizations } = useAuth();
+  // Demo mode - no authentication required
+  const user = { id: 'demo-user-123', email: 'demo@example.com', name: 'Demo User' };
+  const refreshOrganizations = () => console.log('🔄 Organizations refreshed (demo mode)');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -51,7 +52,9 @@ export default function CreateOrganizationModal({
     setError('');
 
     try {
-      await createOrganization(name.trim(), user.id);
+      // Demo mode - simulate organization creation
+      console.log('🏢 Creating organization (demo mode):', name.trim());
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
       await refreshOrganizations();
       
       setSuccess(true);

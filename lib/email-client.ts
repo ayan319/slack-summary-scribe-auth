@@ -101,7 +101,7 @@ export async function sendNotificationEmail(
   actionUrl?: string,
   actionText?: string
 ): Promise<SendEmailResponse> {
-  const html = `
+  const emailTemplate = `
     <!DOCTYPE html>
     <html>
       <head>
@@ -154,7 +154,7 @@ export async function sendNotificationEmail(
   return sendEmail({
     to,
     subject: title,
-    html,
+    html: emailTemplate,
     text,
   });
 }

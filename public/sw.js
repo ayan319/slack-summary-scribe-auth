@@ -1,16 +1,64 @@
-// Service Worker for Push Notifications
-const CACHE_NAME = 'slack-summary-scribe-v1';
+// Service Worker for Slack Summary Scribe PWA
+const CACHE_NAME = 'slack-summary-scribe-v1.0.0';
+const STATIC_CACHE_NAME = 'static-v1.0.0';
+const DYNAMIC_CACHE_NAME = 'dynamic-v1.0.0';
 
-// Install event
+// Files to cache immediately for PWA
+const STATIC_FILES = [
+  '/',
+  '/dashboard',
+  '/upload',
+  '/pricing',
+  '/manifest.json',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  '/offline.html'
+];
+
+// Install event - cache static files for PWA
 self.addEventListener('install', (event) => {
   console.log('Service Worker installing...');
-  self.skipWaiting();
+
+  event.waitUntil(
+    caches.open(STATIC_CACHE_NAME)
+      .then((cache) => {
+        console.log('Caching static files for PWA');
+        return cache.addAll(STATIC_FILES);
+      })
+      .then(() => {
+        console.log('Static files cached successfully');
+        return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('Error caching static files:', error);
+        return self.skipWaiting();
+      })
+  );
 });
 
-// Activate event
+// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
   console.log('Service Worker activating...');
-  event.waitUntil(self.clients.claim());
+
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== STATIC_CACHE_NAME &&
+                cacheName !== DYNAMIC_CACHE_NAME &&
+                cacheName !== CACHE_NAME) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+      .then(() => {
+        console.log('Service Worker activated');
+        return self.clients.claim();
+      })
+  );
 });
 
 // Push event - handle incoming push notifications

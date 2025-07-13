@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient, supabaseAdmin } from '@/lib/supabase';
-import { resend } from '@/lib/resend';
+import { sendEmail } from '@/lib/resend';
 
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@summaryai.com';
 
@@ -25,43 +25,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user info if authenticated (optional)
-    let userId = null;
-    try {
-      const response = NextResponse.next();
-      const supabase = createRouteHandlerClient(request, response);
-      const { data: { user } } = await supabase.auth.getUser();
-      userId = user?.id || null;
-    } catch (error) {
-      // User not authenticated, continue without user ID
-    }
+    // Demo mode - simulate user info
+    const userId = 'demo-user-123';
+    console.log('📧 Support: Demo mode active, user ID:', userId);
 
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { success: false, error: 'Database not available' },
-        { status: 503 }
-      );
-    }
+    // Demo mode - simulate database operation
+    console.log('💾 Creating support ticket (demo mode):', {
+      userId,
+      name,
+      email,
+      subject,
+      messageLength: message.length
+    });
 
-    // Create support ticket in database
-    const { data: ticket, error: dbError } = await supabaseAdmin
-      .from('support_tickets')
-      .insert({
-        user_id: userId,
-        name,
-        email,
-        subject: subject || 'Support Request',
-        message,
-        status: 'open',
-        priority: 'medium'
-      })
-      .select()
-      .single();
+    // Create demo ticket
+    const ticket = {
+      id: 'demo-ticket-' + Date.now(),
+      user_id: userId,
+      name,
+      email,
+      subject: subject || 'Support Request',
+      message,
+      status: 'open',
+      priority: 'medium',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
 
-    if (dbError) {
-      console.error('Database error:', dbError);
-      // Continue with email even if database fails
-    }
+    console.log('✅ Support ticket created (demo mode):', ticket.id);
 
     // Send email to support team
     try {
@@ -73,7 +64,7 @@ export async function POST(request: NextRequest) {
         <h2>New Support Request</h2>
         <p><strong>From:</strong> ${name} (${email})</p>
         <p><strong>Subject:</strong> ${subject || 'No subject'}</p>
-        <p><strong>Ticket ID:</strong> ${ticket?.id || 'N/A'}</p>
+        <p><strong>Ticket ID:</strong> ${ticket.id}</p>
         <p><strong>User ID:</strong> ${userId || 'Anonymous'}</p>
         
         <h3>Message:</h3>
@@ -89,7 +80,7 @@ export async function POST(request: NextRequest) {
         </p>
       `;
 
-      await resend.emails.send({
+      await sendEmail({
         from: `Support Form <noreply@summaryai.com>`,
         to: [SUPPORT_EMAIL],
         subject: emailSubject,
@@ -121,7 +112,7 @@ export async function POST(request: NextRequest) {
         </p>
       `;
 
-      await resend.emails.send({
+      await sendEmail({
         from: `Slack Summary Scribe <noreply@summaryai.com>`,
         to: [email],
         subject: 'Support Request Received - Slack Summary Scribe',

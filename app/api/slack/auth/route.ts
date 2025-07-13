@@ -1,16 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@/lib/supabase';
 import { getSlackOAuthUrl } from '@/lib/slack';
 
 export async function GET(request: NextRequest) {
-  const response = NextResponse.next();
-  
   try {
-    // Get authenticated user
-    const supabase = createRouteHandlerClient(request, response);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
+    const { getCurrentUser } = await import('@/lib/auth');
+    const user = await getCurrentUser();
+
+    if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
@@ -23,36 +19,28 @@ export async function GET(request: NextRequest) {
 
     if (!organizationId) {
       return NextResponse.json(
-        { error: 'Organization ID is required' },
+        { error: 'Organization ID required' },
         { status: 400 }
       );
     }
 
-    // Verify user belongs to the organization
-    const { data: membership, error: membershipError } = await supabase
-      .from('user_organizations')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('organization_id', organizationId)
-      .single();
+    // Check if user has access to organization
+    const { hasPermission } = await import('@/lib/auth');
+    const hasAccess = await hasPermission(user.id, organizationId, 'member');
 
-    if (membershipError || !membership) {
+    if (!hasAccess) {
       return NextResponse.json(
-        { error: 'Access denied to this organization' },
-        { status: 403 }
-      );
-    }
-
-    // Check if user has admin or owner role
-    if (!['admin', 'owner'].includes(membership.role)) {
-      return NextResponse.json(
-        { error: 'Admin or owner role required to connect Slack' },
+        { error: 'Access denied to organization' },
         { status: 403 }
       );
     }
 
     // Generate Slack OAuth URL
-    const oauthUrl = getSlackOAuthUrl(organizationId);
+    const oauthUrl = getSlackOAuthUrl(
+      process.env.SLACK_CLIENT_ID!,
+      `${process.env.NEXT_PUBLIC_SITE_URL}/api/slack/callback`,
+      organizationId
+    );
 
     return NextResponse.json({
       success: true,

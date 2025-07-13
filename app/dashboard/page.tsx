@@ -1,443 +1,474 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/lib/user-context';
+import { supabase } from '@/lib/supabase';
+import AuthGuard from '@/components/AuthGuard';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useAuth, withAuth } from '@/components/providers/AuthProvider';
-import { signOut } from '@/lib/auth';
-import OrganizationSwitcher from '@/components/OrganizationSwitcher';
-import CreateOrganizationModal, { useCreateOrganizationModal } from '@/components/CreateOrganizationModal';
-import {
-  Menu,
-  MessageSquare,
-  Users,
-  Slack,
-  TrendingUp,
-  RefreshCw,
-  Settings,
-  LogOut,
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  BarChart3, 
+  FileText, 
+  Users, 
+  TrendingUp, 
   Plus,
-  AlertCircle,
-  FileText,
   Calendar,
+  MessageSquare,
   Download,
-  Upload,
+  Settings,
   Bell,
   Search,
   Filter,
   MoreHorizontal,
   ExternalLink,
+  Zap,
   Clock,
   CheckCircle,
-  XCircle,
-  Zap
+  AlertCircle,
+  Info,
+  LogOut,
+  User
 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import Link from 'next/link';
+import { toast } from 'sonner';
+import NotificationCenter from '@/components/NotificationCenter';
+import type { Summary } from '@/types/api';
 
-interface DashboardStats {
-  totalSummaries: number;
-  slackIntegrations: number;
-  summariesThisMonth: number;
-  teamMembers: number;
+interface DashboardData {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    avatar_url?: string;
+  };
+  subscription: {
+    plan: string;
+    status: string;
+  };
+  stats: {
+    totalSummaries: number;
+    workspacesConnected: number;
+    summariesThisMonth: number;
+  };
+  slackWorkspaces: Array<{
+    id: string;
+    name: string;
+    connected: boolean;
+    team_id?: string;
+  }>;
+  recentSummaries: Array<{
+    id: string;
+    title: string;
+    channelName: string;
+    createdAt: string;
+    messageCount: number;
+  }>;
+  notifications?: Array<{
+    id: string;
+    type: string;
+    title: string;
+    message: string;
+    created_at: string;
+  }>;
 }
 
-interface SlackIntegration {
-  id: string;
-  slack_team_name: string;
-  connected: boolean;
-  created_at: string;
-}
-
-interface RecentSummary {
-  id: string;
-  title: string;
-  channel_name: string;
-  created_at: string;
-  message_count: number;
-}
-
-function DashboardPage() {
-  const { user, organizations, currentOrganization } = useAuth();
+function DashboardContent() {
+  const { user, isLoading: userLoading } = useUser();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState('');
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [slackIntegrations, setSlackIntegrations] = useState<SlackIntegration[]>([]);
-  const [recentSummaries, setRecentSummaries] = useState<RecentSummary[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const { open: isCreateOrgOpen, openModal: openCreateOrg, closeModal: closeCreateOrg } = useCreateOrganizationModal();
-
-  // Add comprehensive session logging
-  useEffect(() => {
-    console.log('🏠 Dashboard: Component mounted, checking session...');
-    console.log('📊 Dashboard: Auth state:', {
-      hasUser: !!user,
-      userEmail: user?.email,
-      userId: user?.id,
-      userName: user?.name,
-      hasCurrentOrg: !!currentOrganization,
-      currentOrgName: currentOrganization?.name,
-      totalOrgs: organizations.length,
-      loading
-    });
-
-    // Check Supabase environment variables
-    console.log('🔧 Dashboard: Environment check:', {
-      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-      hasSupabaseKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30) + '...',
-    });
-
-    // Check cookies
-    if (typeof window !== 'undefined') {
-      const cookies = document.cookie;
-      const supabaseCookies = cookies.split(';').filter(cookie =>
-        cookie.includes('sb-') || cookie.includes('supabase')
-      );
-      console.log('🍪 Dashboard: Supabase cookies found:', supabaseCookies.length);
-      console.log('🍪 Dashboard: All cookies:', cookies.split(';').length);
-    }
-  }, [user, currentOrganization, organizations, loading]);
+  // Transcript input state
+  const [transcriptText, setTranscriptText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [summaryResult, setSummaryResult] = useState<Summary | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const fetchDashboardData = useCallback(async () => {
-    if (!currentOrganization) return;
+    if (!user) {
+      console.log('🔐 No user found, redirecting to login');
+      router.push('/login');
+      return;
+    }
 
     try {
-      setError('');
+      setLoading(true);
+      setError(null);
 
-      // Mock data for now - replace with actual API calls
-      setStats({
-        totalSummaries: 42,
-        slackIntegrations: 1,
-        summariesThisMonth: 12,
-        teamMembers: organizations.length > 0 ? 3 : 1,
+      console.log('📊 Fetching dashboard data for user:', user.email);
+
+      const response = await fetch('/api/dashboard', {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for session
       });
 
-      setSlackIntegrations([
-        {
-          id: '1',
-          slack_team_name: 'Example Team',
-          connected: true,
-          created_at: new Date().toISOString(),
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('🔐 Unauthorized, redirecting to login');
+          router.push('/login');
+          return;
         }
-      ]);
 
-      setRecentSummaries([
-        {
-          id: '1',
-          title: 'Weekly Standup Summary',
-          channel_name: 'general',
-          created_at: new Date().toISOString(),
-          message_count: 25,
-        },
-        {
-          id: '2',
-          title: 'Product Discussion',
-          channel_name: 'product',
-          created_at: new Date(Date.now() - 86400000).toISOString(),
-          message_count: 18,
-        }
-      ]);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to fetch dashboard data`);
+      }
 
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setError('Failed to load dashboard data');
+      const result = await response.json();
+      console.log('📊 Dashboard data fetched successfully');
+      setData(result.data);
+    } catch (err) {
+      console.error('📊 Dashboard fetch error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data';
+      setError(errorMessage);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  }, [currentOrganization, organizations.length]);
+  }, [user, router]);
 
   useEffect(() => {
-    if (currentOrganization) {
-      fetchDashboardData();
+    if (!userLoading) {
+      if (user) {
+        fetchDashboardData();
+      } else {
+        router.replace('/login');
+      }
     }
-  }, [currentOrganization, fetchDashboardData]);
+  }, [userLoading, user, fetchDashboardData, router]);
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchDashboardData();
-  };
-
-  const handleLogout = async () => {
+  const handleSignOut = async () => {
     try {
-      await signOut();
-      router.push('/login');
+      await supabase.auth.signOut();
+      toast.success('Signed out successfully');
+      router.push('/');
     } catch (error) {
-      console.error('Logout error:', error);
+      toast.error('Error signing out');
     }
   };
 
-  // Sidebar content component
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full">
-      <div className="p-6 border-b">
-        <h2 className="text-lg font-semibold">Slack Summary Scribe</h2>
-        <p className="text-sm text-muted-foreground">AI-powered summaries</p>
-      </div>
+  const handleSummarize = async () => {
+    if (!transcriptText.trim()) {
+      setSummaryError('Transcript cannot be empty');
+      return;
+    }
 
-      <div className="flex-1 p-4 space-y-4">
-        {/* Organization Switcher */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Organization</label>
-          <OrganizationSwitcher />
-        </div>
+    setIsProcessing(true);
+    setSummaryError(null);
+    setSummaryResult(null);
 
-        {/* Navigation */}
-        <nav className="space-y-2">
-          <Button variant="default" className="w-full justify-start">
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Dashboard
-          </Button>
-          <Button variant="ghost" className="w-full justify-start">
-            <FileText className="mr-2 h-4 w-4" />
-            Summaries
-          </Button>
-          <Button variant="ghost" className="w-full justify-start">
-            <Slack className="mr-2 h-4 w-4" />
-            Integrations
-          </Button>
-          <Button variant="ghost" className="w-full justify-start">
-            <Users className="mr-2 h-4 w-4" />
-            Team
-          </Button>
-          <Button variant="ghost" className="w-full justify-start">
-            <Settings className="mr-2 h-4 w-4" />
-            Settings
-          </Button>
-        </nav>
+    try {
+      const response = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transcriptText: transcriptText.trim(),
+          userId: user?.id,
+          context: {
+            source: 'manual'
+          }
+        }),
+      });
 
-        {/* Quick Actions */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Quick Actions</label>
-          <Button variant="outline" size="sm" className="w-full justify-start">
-            <Upload className="mr-2 h-4 w-4" />
-            Upload Transcript
-          </Button>
-          <Button variant="outline" size="sm" className="w-full justify-start">
-            <Plus className="mr-2 h-4 w-4" />
-            Connect Slack
-          </Button>
-        </div>
-      </div>
+      const result = await response.json();
 
-      <div className="p-4 border-t">
-        <div className="flex items-center space-x-3 mb-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-            {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">{user?.name || 'User'}</p>
-            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate summary');
+      }
+
+      setSummaryResult(result);
+      // Refresh dashboard data to show new summary
+      fetchDashboardData();
+    } catch (error) {
+      console.error('Summarization error:', error);
+      setSummaryError(error instanceof Error ? error.message : 'Failed to generate summary');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-6">
+            <Skeleton className="h-8 w-64" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+              <Skeleton className="h-32" />
+            </div>
+            <Skeleton className="h-64" />
           </div>
         </div>
-        <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
-        </Button>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Alert className="max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Mobile Header */}
-      <div className="lg:hidden bg-white dark:bg-gray-800 border-b px-4 py-3 flex items-center justify-between">
-        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="sm">
-              <Menu className="h-5 w-5" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="p-0 w-80">
-            <SidebarContent />
-          </SheetContent>
-        </Sheet>
-
-        <h1 className="text-lg font-semibold">Dashboard</h1>
-
-        <Button variant="ghost" size="sm" onClick={handleRefresh} disabled={refreshing}>
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-        </Button>
-      </div>
-
-      <div className="flex">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block w-80 bg-white dark:bg-gray-800 border-r min-h-screen">
-          <SidebarContent />
-        </div>
-
-        {/* Main Content */}
-        <div className="flex-1 p-4 lg:p-8">
-          {/* Header */}
-          <div className="hidden lg:flex items-center justify-between mb-8">
-            <div>
-              <h1 className="text-2xl font-bold">Dashboard</h1>
-              <p className="text-muted-foreground">
-                Welcome back, {user?.name}
-              </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow" role="banner">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-3xl font-bold text-gray-900">SummaryAI</h1>
+              <Badge variant="secondary" aria-label={`Current plan: ${data.subscription.plan}`}>{data.subscription.plan}</Badge>
             </div>
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
-                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
-                Refresh
+              <NotificationCenter />
+              <div className="flex items-center space-x-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={data.user.avatar_url} />
+                  <AvatarFallback>
+                    {data.user.name?.charAt(0) || data.user.email.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="hidden md:block">
+                  <p className="text-sm font-medium text-gray-900">{data.user.name}</p>
+                  <p className="text-xs text-gray-500">{data.user.email}</p>
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           </div>
+        </div>
+      </header>
 
-          {/* Error Alert */}
-          {error && (
-            <Alert variant="destructive" className="mb-6">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Summaries</CardTitle>
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.totalSummaries || 0}</div>
-                <p className="text-xs text-muted-foreground">
-                  {stats?.summariesThisMonth || 0} this month
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Slack Integrations</CardTitle>
-                <Slack className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.slackIntegrations || 0}</div>
-                <p className="text-xs text-muted-foreground">
-                  Active connections
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">This Month</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.summariesThisMonth || 0}</div>
-                <p className="text-xs text-muted-foreground">
-                  +12% from last month
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Team Members</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats?.teamMembers || 0}</div>
-                <p className="text-xs text-muted-foreground">
-                  Active users
-                </p>
-              </CardContent>
-            </Card>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" role="main">
+        {/* Welcome Section */}
+        <section className="mb-8" aria-labelledby="welcome-heading">
+          <div className="flex justify-between items-center mb-4">
+            <div>
+              <h2 id="welcome-heading" className="text-2xl font-bold text-gray-900 mb-2">
+                Welcome back, {data.user.name || 'there'}!
+              </h2>
+              <p className="text-gray-600">
+                Here's what's happening with your summaries today.
+              </p>
+            </div>
+            <div className="flex space-x-3">
+              <Link href="/upload">
+                <Button className="flex items-center space-x-2" aria-label="Upload a new document for AI summarization">
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  <span>Upload Document</span>
+                </Button>
+              </Link>
+            </div>
           </div>
+        </section>
 
-          {/* Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
-            {/* Recent Summaries */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Recent Summaries
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </CardTitle>
-                <CardDescription>
-                  Your latest AI-generated summaries
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentSummaries.map((summary) => (
-                    <div key={summary.id} className="flex items-center space-x-4 p-3 rounded-lg border">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <FileText className="h-5 w-5 text-blue-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{summary.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          #{summary.channel_name} • {summary.message_count} messages
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(summary.created_at).toLocaleDateString()}
-                        </p>
-                        <Button variant="ghost" size="sm">
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                  {recentSummaries.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No summaries yet</p>
-                      <p className="text-xs">Upload a transcript to get started</p>
+        {/* Transcript Input Section */}
+        <div className="mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <FileText className="h-5 w-5" />
+                <span>Create Summary from Transcript</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Textarea
+                  data-testid="transcript-input"
+                  placeholder="Paste your meeting transcript, conversation, or any text you'd like to summarize..."
+                  value={transcriptText}
+                  onChange={(e) => setTranscriptText(e.target.value)}
+                  className="min-h-[120px] resize-y"
+                  disabled={isProcessing}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-500">
+                  {transcriptText.length} characters
+                </div>
+                <Button
+                  data-testid="summarize-button"
+                  onClick={handleSummarize}
+                  disabled={!transcriptText.trim() || isProcessing}
+                  className="flex items-center space-x-2"
+                >
+                  {isProcessing ? (
+                    <>
+                      <div data-testid="loading-spinner" className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Processing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="h-4 w-4" />
+                      <span>Generate Summary</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {summaryError && (
+                <Alert variant="destructive">
+                  <AlertDescription data-testid="error-message">
+                    {summaryError}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {summaryResult && (
+                <div data-testid="summary-result" className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <h4 className="font-semibold text-green-800 mb-2">Summary Generated Successfully!</h4>
+                  <p className="text-green-700 mb-3">{summaryResult.content}</p>
+                  {summaryResult.skills_detected && summaryResult.skills_detected.length > 0 && (
+                    <div data-testid="skills-detected" className="mt-2">
+                      <span className="text-sm font-medium text-green-800">Skills detected: </span>
+                      <span className="text-sm text-green-700">{summaryResult.skills_detected.join(', ')}</span>
                     </div>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
-            {/* Slack Integrations */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  Slack Integrations
-                  <Button variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Connect
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card data-testid="dashboard-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Summaries</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{data.stats.totalSummaries}</div>
+              <p className="text-xs text-muted-foreground">
+                {data.stats.summariesThisMonth} this month
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="dashboard-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Connected Workspaces</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{data.stats.workspacesConnected}</div>
+              <p className="text-xs text-muted-foreground">
+                Slack integrations active
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card data-testid="analytics-chart">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">This Month</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{data.stats.summariesThisMonth}</div>
+              <p className="text-xs text-muted-foreground">
+                New summaries created
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Recent Summaries */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Summaries</CardTitle>
+              <CardDescription>Your latest AI-generated summaries</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {data.recentSummaries.length === 0 ? (
+                <div className="text-center py-8">
+                  <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No summaries yet</p>
+                  <Button className="mt-4" asChild>
+                    <Link href="/slack/connect">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Create Your First Summary
+                    </Link>
                   </Button>
-                </CardTitle>
-                <CardDescription>
-                  Manage your Slack workspace connections
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+                </div>
+              ) : (
                 <div className="space-y-4">
-                  {slackIntegrations.map((integration) => (
-                    <div key={integration.id} className="flex items-center space-x-4 p-3 rounded-lg border">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <Slack className="h-5 w-5 text-purple-600" />
+                  {data.recentSummaries.map((summary) => (
+                    <div key={summary.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900">{summary.title}</h4>
+                        <p className="text-sm text-gray-500">
+                          {summary.channelName} • {summary.messageCount} messages
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {formatDistanceToNow(new Date(summary.createdAt), { addSuffix: true })}
+                        </p>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{integration.slack_team_name}</p>
-                        <div className="flex items-center space-x-2">
-                          {integration.connected ? (
-                            <>
-                              <CheckCircle className="h-3 w-3 text-green-500" />
-                              <span className="text-xs text-green-600">Connected</span>
-                            </>
-                          ) : (
-                            <>
-                              <XCircle className="h-3 w-3 text-red-500" />
-                              <span className="text-xs text-red-600">Disconnected</span>
-                            </>
-                          )}
+                      <Button variant="ghost" size="sm">
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Slack Workspaces */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Slack Workspaces</CardTitle>
+              <CardDescription>Manage your connected Slack teams</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {data.slackWorkspaces.length === 0 ? (
+                <div className="text-center py-8">
+                  <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No workspaces connected</p>
+                  <Button className="mt-4" asChild>
+                    <Link href="/slack/connect">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Connect Slack Workspace
+                    </Link>
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {data.slackWorkspaces.map((workspace) => (
+                    <div key={workspace.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-3 h-3 rounded-full ${workspace.connected ? 'bg-green-500' : 'bg-gray-300'}`} />
+                        <div>
+                          <h4 className="font-medium text-gray-900">{workspace.name}</h4>
+                          <p className="text-sm text-gray-500">
+                            {workspace.connected ? 'Connected' : 'Disconnected'}
+                          </p>
                         </div>
                       </div>
                       <Button variant="ghost" size="sm">
@@ -445,25 +476,22 @@ function DashboardPage() {
                       </Button>
                     </div>
                   ))}
-                  {slackIntegrations.length === 0 && (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Slack className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No integrations yet</p>
-                      <p className="text-xs">Connect your first Slack workspace</p>
-                    </div>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      </div>
-
-      {/* Create Organization Modal */}
-      <CreateOrganizationModal open={isCreateOrgOpen} onOpenChange={closeCreateOrg} />
+      </main>
     </div>
   );
 }
 
-// Export the component wrapped with authentication
-export default withAuth(DashboardPage, { requireOrganization: true });
+export default function DashboardPage() {
+  return (
+    <ErrorBoundary>
+      <AuthGuard>
+        <DashboardContent />
+      </AuthGuard>
+    </ErrorBoundary>
+  );
+}

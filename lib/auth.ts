@@ -1,5 +1,4 @@
 import { supabase } from './supabase';
-import type { User } from '@supabase/supabase-js';
 
 export interface AuthUser {
   id: string;
@@ -20,15 +19,11 @@ export interface Organization {
 /**
  * Sign in with OAuth provider
  */
-export async function signInWithOAuth(provider: 'google') {
+export async function signInWithOAuth(provider: 'google' | 'github' | 'slack') {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `${window.location.origin}/api/auth/callback`,
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
-      },
+      redirectTo: `${window.location.origin}/dashboard`,
     },
   });
 
@@ -49,10 +44,8 @@ export async function signUpWithEmail(email: string, password: string, name?: st
       password,
       options: {
         data: {
-          full_name: name,
-          name: name,
+          name,
         },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/auth/callback`,
       },
     });
 
@@ -136,14 +129,10 @@ export async function signInWithEmail(email: string, password: string) {
  */
 export async function resetPassword(email: string) {
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/auth/reset-password`,
+    redirectTo: `${window.location.origin}/reset-password`,
   });
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+  return { data, error };
 }
 
 /**
@@ -154,11 +143,7 @@ export async function updatePassword(password: string) {
     password,
   });
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+  return { data, error };
 }
 
 /**
@@ -168,16 +153,9 @@ export async function resendVerification(email: string) {
   const { data, error } = await supabase.auth.resend({
     type: 'signup',
     email,
-    options: {
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
-    },
   });
 
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return data;
+  return { data, error };
 }
 
 /**
@@ -186,48 +164,34 @@ export async function resendVerification(email: string) {
 export async function signOut() {
   const { error } = await supabase.auth.signOut();
 
-  if (error) {
-    throw new Error(error.message);
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('currentOrganization');
   }
 
-  // Redirect to login page
-  window.location.href = '/login';
+  return { error };
 }
-
-
 
 /**
  * Get current user session
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  console.log('🔍 getCurrentUser: Fetching user session...');
-  const { data: { user }, error } = await supabase.auth.getUser();
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (error) {
-    console.log('❌ getCurrentUser: Error fetching user:', error.message);
-    return null;
+    if (user) {
+      return {
+        id: user.id,
+        email: user.email!,
+        name: user.user_metadata?.name || user.email!.split('@')[0],
+        avatar_url: user.user_metadata?.avatar_url,
+        provider: user.app_metadata?.provider
+      };
+    }
+  } catch (error) {
+    console.error('Authentication error:', error);
   }
 
-  if (!user) {
-    console.log('⚠️ getCurrentUser: No user found in session');
-    return null;
-  }
-
-  const authUser = {
-    id: user.id,
-    email: user.email!,
-    name: user.user_metadata?.full_name || user.user_metadata?.name || user.email!,
-    avatar_url: user.user_metadata?.avatar_url,
-    provider: user.app_metadata?.provider,
-  };
-
-  console.log('✅ getCurrentUser: User found:', {
-    id: authUser.id,
-    email: authUser.email,
-    name: authUser.name
-  });
-
-  return authUser;
+  return null;
 }
 
 /**
@@ -235,131 +199,92 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
  */
 export async function getUserOrganizations(userId: string): Promise<Organization[]> {
   try {
-    // First check if tables exist by trying a simple query
+    const { createServerClient } = await import('@supabase/ssr');
+    const { cookies } = await import('next/headers');
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        cookies: {
+          async get(name: string) {
+            const cookieStore = await cookies();
+            return cookieStore.get(name)?.value;
+          },
+        },
+      }
+    );
+
     const { data, error } = await supabase
       .from('user_organizations')
       .select(`
         role,
-        organizations (
+        organization:organizations (
           id,
-          name
+          name,
+          slug,
+          avatar_url
         )
       `)
       .eq('user_id', userId);
 
-    if (error || !data) {
-      console.error('Error fetching user organizations:', error || 'No data returned');
+    if (error) {
+      console.error('Error fetching user organizations:', error);
       return [];
     }
 
-    if (data.length === 0) {
-      return [];
-    }
-
-    return data.map((item: any) => ({
-      id: item.organizations?.id || '',
-      name: item.organizations?.name || 'Unknown Organization',
-      slug: item.organizations?.name?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
-      role: item.role,
-    }));
+    return data.map(item => {
+      const org = Array.isArray(item.organization) ? item.organization[0] : item.organization;
+      return {
+        id: org?.id,
+        name: org?.name,
+        slug: org?.slug,
+        avatar_url: org?.avatar_url,
+        role: item.role
+      };
+    });
   } catch (error) {
-    console.error('getUserOrganizations error:', error);
-    // Return empty array instead of throwing to prevent app crashes
+    console.error('Error in getUserOrganizations:', error);
     return [];
   }
 }
 
 /**
- * Create a new organization
+ * Create a new organization (demo mode)
  */
 export async function createOrganization(name: string, userId: string): Promise<Organization> {
-  try {
-    // Generate slug from name
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-
-    // Create organization
-    const { data: org, error: orgError } = await supabase
-      .from('organizations')
-      .insert({
-        name,
-      })
-      .select()
-      .single();
-
-    if (orgError) {
-      console.error('Error creating organization:', orgError);
-      throw new Error(`Failed to create organization: ${orgError.message}`);
-    }
-
-    // Add user as owner
-    const { error: memberError } = await supabase
-      .from('user_organizations')
-      .insert({
-        user_id: userId,
-        organization_id: org.id,
-        role: 'owner',
-      });
-
-    if (memberError) {
-      console.error('Error adding user to organization:', memberError);
-      throw new Error(`Failed to add user to organization: ${memberError.message}`);
-    }
-
-    return {
-      id: org.id as string,
-      name: org.name as string,
-      slug: slug,
-      role: 'owner',
-    };
-  } catch (error) {
-    console.error('createOrganization error:', error);
-    throw error;
-  }
+  console.log('🏢 Create organization (demo mode):', { name, userId });
+  
+  return {
+    id: 'demo-org-' + Date.now(),
+    name,
+    slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    role: 'owner'
+  };
 }
 
 /**
- * Invite user to organization
+ * Invite user to organization (demo mode)
  */
 export async function inviteUserToOrganization(
   email: string,
   organizationId: string,
   role: 'admin' | 'member' = 'member'
 ) {
-  // Check if user exists
-  const { data: existingUser } = await supabase
-    .from('users')
-    .select('id')
-    .eq('email', email)
-    .single();
-
-  if (existingUser) {
-    // Add existing user to organization
-    const { error } = await supabase
-      .from('user_organizations')
-      .insert({
-        user_id: existingUser.id,
-        organization_id: organizationId,
-        role,
-      });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-  }
-
-  // TODO: Send invitation email
-  return { success: true, userExists: !!existingUser };
+  console.log('👥 Invite user (demo mode):', { email, organizationId, role });
+  return { success: true };
 }
 
 /**
- * Switch to organization
+ * Switch to organization (demo mode)
  */
 export async function switchOrganization(organizationId: string) {
-  // Store current organization in localStorage
-  localStorage.setItem('currentOrganization', organizationId);
-
-  // Trigger a page refresh to update the context
-  window.location.reload();
+  console.log('🔄 Switch organization (demo mode):', organizationId);
+  
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('currentOrganization', organizationId);
+    window.location.reload();
+  }
 }
 
 /**
@@ -374,14 +299,24 @@ export function getCurrentOrganizationId(): string | null {
  * Listen to auth state changes
  */
 export function onAuthStateChange(callback: (user: AuthUser | null) => void) {
-  return supabase.auth.onAuthStateChange(async (event: any, session: any) => {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    console.log('Auth state change:', event, session?.user?.email);
+
     if (session?.user) {
-      const authUser = await getCurrentUser();
-      callback(authUser);
+      const user: AuthUser = {
+        id: session.user.id,
+        email: session.user.email!,
+        name: session.user.user_metadata?.name || session.user.email!.split('@')[0],
+        avatar_url: session.user.user_metadata?.avatar_url,
+        provider: session.user.app_metadata?.provider
+      };
+      callback(user);
     } else {
       callback(null);
     }
   });
+
+  return { data: { subscription } };
 }
 
 /**
@@ -392,17 +327,25 @@ export async function hasPermission(
   organizationId: string,
   requiredRole: 'owner' | 'admin' | 'member'
 ): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('user_organizations')
-    .select('role')
-    .eq('user_id', userId)
-    .eq('organization_id', organizationId)
-    .single();
+  try {
+    const { data, error } = await supabase
+      .from('user_organizations')
+      .select('role')
+      .eq('user_id', userId)
+      .eq('organization_id', organizationId)
+      .single();
 
-  if (error || !data) {
+    if (error || !data) {
+      return false;
+    }
+
+    const roleHierarchy = { owner: 3, admin: 2, member: 1 };
+    const userRoleLevel = roleHierarchy[data.role as keyof typeof roleHierarchy] || 0;
+    const requiredRoleLevel = roleHierarchy[requiredRole];
+
+    return userRoleLevel >= requiredRoleLevel;
+  } catch (error) {
+    console.error('Permission check error:', error);
     return false;
   }
-
-  const roleHierarchy: Record<string, number> = { owner: 3, admin: 2, member: 1 };
-  return roleHierarchy[data.role as string] >= roleHierarchy[requiredRole];
 }

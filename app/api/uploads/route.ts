@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient, supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication
-    const response = NextResponse.next();
-    const supabase = createRouteHandlerClient(request, response);
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
+    const { getCurrentUser } = await import('@/lib/auth');
+    const user = await getCurrentUser();
+
+    if (!user) {
       return NextResponse.json(
-        { success: false, error: 'Authentication required' },
+        { error: 'Authentication required' },
         { status: 401 }
       );
     }
@@ -19,45 +15,74 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get('organizationId');
 
-    if (!supabaseAdmin) {
+    if (!organizationId) {
       return NextResponse.json(
-        { success: false, error: 'Database not available' },
-        { status: 503 }
+        { error: 'Organization ID required' },
+        { status: 400 }
       );
     }
 
-    // Build query
-    let query = supabaseAdmin
-      .from('file_uploads')
-      .select(`
-        *,
-        summaries (
-          id,
-          title,
-          content,
-          created_at
-        )
-      `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
+    console.log('📋 Fetching uploads:', {
+      userId: user.id,
+      organizationId
+    });
 
-    // Filter by organization if provided
-    if (organizationId) {
-      query = query.eq('organization_id', organizationId);
+    // Demo uploads data
+    const demoUploads = [
+      {
+        id: 'demo-upload-1',
+        user_id: 'demo-user-123',
+        organization_id: organizationId,
+        file_name: 'quarterly-report.pdf',
+        file_size: 2048000,
+        file_type: 'application/pdf',
+        file_url: 'https://demo-storage.example.com/quarterly-report.pdf',
+        upload_status: 'completed',
+        processing_status: 'completed',
+        created_at: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+        updated_at: new Date(Date.now() - 86400000).toISOString(),
+        summaries: [
+          {
+            id: 'demo-summary-1',
+            title: 'Summary of quarterly-report.pdf',
+            content: 'This quarterly report shows strong performance across all metrics...',
+            created_at: new Date(Date.now() - 86400000).toISOString()
+          }
+        ]
+      },
+      {
+        id: 'demo-upload-2',
+        user_id: 'demo-user-123',
+        organization_id: organizationId,
+        file_name: 'meeting-notes.docx',
+        file_size: 512000,
+        file_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        file_url: 'https://demo-storage.example.com/meeting-notes.docx',
+        upload_status: 'completed',
+        processing_status: 'completed',
+        created_at: new Date(Date.now() - 172800000).toISOString(), // 2 days ago
+        updated_at: new Date(Date.now() - 172800000).toISOString(),
+        summaries: [
+          {
+            id: 'demo-summary-2',
+            title: 'Summary of meeting-notes.docx',
+            content: 'Key decisions from the team meeting include...',
+            created_at: new Date(Date.now() - 172800000).toISOString()
+          }
+        ]
+      }
+    ];
+
+    // Filter by organization if provided (demo mode)
+    let filteredUploads = demoUploads;
+    if (organizationId && organizationId !== 'demo-org-123') {
+      filteredUploads = []; // No uploads for other organizations in demo
     }
 
-    const { data: uploads, error } = await query;
-
-    if (error) {
-      console.error('Database error:', error);
-      return NextResponse.json(
-        { success: false, error: 'Failed to fetch uploads' },
-        { status: 500 }
-      );
-    }
+    console.log('✅ Uploads fetched (demo mode):', filteredUploads.length);
 
     // Transform data for frontend
-    const transformedUploads = uploads.map((upload: any) => ({
+    const transformedUploads = filteredUploads.map((upload: any) => ({
       id: upload.id,
       fileName: upload.file_name,
       fileSize: upload.file_size,

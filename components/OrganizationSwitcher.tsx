@@ -18,8 +18,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useAuth } from '@/components/providers/AuthProvider';
-import { switchOrganization } from '@/lib/auth';
+// Auth removed - demo mode
 
 interface OrganizationSwitcherProps {
   onCreateOrganization?: () => void;
@@ -30,14 +29,18 @@ export default function OrganizationSwitcher({
   onCreateOrganization,
   onManageOrganization,
 }: OrganizationSwitcherProps) {
-  const { organizations, currentOrganization, setCurrentOrganization } = useAuth();
+  // Demo mode - no authentication required
+  const organizations = [{ id: 'demo-org-123', name: 'Demo Organization', slug: 'demo-org', role: 'owner' as const, avatar_url: undefined }];
+  const currentOrganization = organizations[0];
+  const setCurrentOrganization = (org: any) => console.log('🏢 Organization switched (demo mode):', org?.name);
   const [open, setOpen] = useState(false);
 
   const handleOrganizationSelect = async (orgId: string) => {
     const selectedOrg = organizations.find(org => org.id === orgId);
     if (selectedOrg && selectedOrg.id !== currentOrganization?.id) {
       setCurrentOrganization(selectedOrg);
-      await switchOrganization(orgId);
+      // Demo mode - no actual switching needed
+      console.log('🔄 Organization switch (demo mode):', selectedOrg.name);
     }
     setOpen(false);
   };
@@ -161,7 +164,9 @@ export default function OrganizationSwitcher({
 
 // Organization stats component
 export function OrganizationStats() {
-  const { currentOrganization, organizations } = useAuth();
+  // Demo mode - no authentication required
+  const currentOrganization = { id: 'demo-org-123', name: 'Demo Organization', slug: 'demo-org', role: 'owner' as const, avatar_url: undefined };
+  const organizations = [currentOrganization];
 
   if (!currentOrganization) return null;
 

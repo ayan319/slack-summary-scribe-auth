@@ -496,9 +496,193 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated;
 -- Insert sample data for testing (optional)
 -- This will be executed only if no organizations exist
 DO $$
+DECLARE
+    test_user_id UUID;
+    test_org_id UUID;
+    test_slack_integration_id UUID;
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM organizations LIMIT 1) THEN
-        -- This is a fresh installation, no sample data needed
-        RAISE NOTICE 'Fresh installation detected. No sample data inserted.';
+    -- Check if test user exists in auth.users
+    SELECT id INTO test_user_id
+    FROM auth.users
+    WHERE email = 'mohammadayan5442@gmail.com'
+    LIMIT 1;
+
+    IF test_user_id IS NOT NULL THEN
+        RAISE NOTICE 'Found test user: %', test_user_id;
+
+        -- Ensure user profile exists
+        INSERT INTO users (id, name, email, provider, settings)
+        VALUES (
+            test_user_id,
+            'Ayan',
+            'mohammadayan5442@gmail.com',
+            'email',
+            '{"theme": "dark", "notifications": true}'
+        )
+        ON CONFLICT (id) DO UPDATE SET
+            name = EXCLUDED.name,
+            email = EXCLUDED.email,
+            updated_at = NOW();
+
+        -- Create or get test organization
+        INSERT INTO organizations (name, slug, settings)
+        VALUES (
+            'Ayan''s Workspace',
+            'ayans-workspace',
+            '{"plan": "pro", "features": ["ai_summaries", "slack_integration", "exports"]}'
+        )
+        ON CONFLICT (slug) DO UPDATE SET
+            name = EXCLUDED.name,
+            settings = EXCLUDED.settings,
+            updated_at = NOW()
+        RETURNING id INTO test_org_id;
+
+        -- Ensure user is owner of organization
+        INSERT INTO user_organizations (user_id, organization_id, role, permissions)
+        VALUES (
+            test_user_id,
+            test_org_id,
+            'owner',
+            '{"admin": true, "billing": true, "integrations": true}'
+        )
+        ON CONFLICT (user_id, organization_id) DO UPDATE SET
+            role = EXCLUDED.role,
+            permissions = EXCLUDED.permissions;
+
+        -- Create Slack integration
+        INSERT INTO slack_integrations (
+            user_id, organization_id, slack_team_id, slack_team_name,
+            access_token, bot_token, bot_user_id, scope, is_active
+        )
+        VALUES (
+            test_user_id, test_org_id, 'T1234567890', 'Ayan''s Team',
+            'xoxp-test-token', 'xoxb-test-bot-token', 'U1234567890',
+            'channels:read,chat:write,files:read', true
+        )
+        ON CONFLICT (organization_id, slack_team_id) DO UPDATE SET
+            is_active = EXCLUDED.is_active,
+            updated_at = NOW()
+        RETURNING id INTO test_slack_integration_id;
+
+        -- Insert demo summaries
+        INSERT INTO summaries (user_id, organization_id, title, content, summary_data, source, slack_channel, metadata, tags)
+        VALUES
+        (
+            test_user_id, test_org_id,
+            'Weekly Team Standup - Sprint Planning',
+            'Team discussed upcoming sprint goals and task assignments. Key decisions made on architecture changes and timeline adjustments. Sarah will lead the frontend redesign, Mike will handle backend optimizations, and Lisa will focus on testing automation.',
+            '{"participants": ["Sarah", "Mike", "Lisa", "Ayan"], "duration": "45 minutes", "action_items": 3, "decisions": 2}',
+            'slack', '#general',
+            '{"channel_id": "C1234567890", "message_count": 23, "thread_count": 5}',
+            ARRAY['standup', 'sprint-planning', 'team-meeting']
+        ),
+        (
+            test_user_id, test_org_id,
+            'Product Launch Discussion',
+            'Comprehensive review of the upcoming product launch. Marketing strategy finalized, launch date confirmed for next month. Need to coordinate with sales team and prepare customer support documentation.',
+            '{"participants": ["Product Team", "Marketing", "Sales"], "duration": "60 minutes", "action_items": 8, "decisions": 4}',
+            'slack', '#product',
+            '{"channel_id": "C2345678901", "message_count": 45, "thread_count": 12}',
+            ARRAY['product-launch', 'marketing', 'strategy']
+        ),
+        (
+            test_user_id, test_org_id,
+            'Technical Architecture Review',
+            'Deep dive into system architecture improvements. Discussed microservices migration, database optimization strategies, and security enhancements. Decided to implement Redis caching and upgrade to PostgreSQL 15.',
+            '{"participants": ["Engineering Team"], "duration": "90 minutes", "action_items": 12, "decisions": 6}',
+            'slack', '#engineering',
+            '{"channel_id": "C3456789012", "message_count": 67, "thread_count": 18}',
+            ARRAY['architecture', 'technical', 'database', 'performance']
+        ),
+        (
+            test_user_id, test_org_id,
+            'Customer Feedback Analysis',
+            'Analyzed recent customer feedback and support tickets. Identified key pain points in user onboarding and feature requests. Priority items include improving documentation and adding bulk operations.',
+            '{"participants": ["Support Team", "Product"], "duration": "30 minutes", "action_items": 5, "decisions": 3}',
+            'upload', NULL,
+            '{"file_type": "pdf", "file_size": "2.3MB", "pages": 15}',
+            ARRAY['customer-feedback', 'support', 'product-improvement']
+        ),
+        (
+            test_user_id, test_org_id,
+            'Q4 Budget Planning Session',
+            'Quarterly budget review and planning for Q4. Allocated resources for new hires, infrastructure upgrades, and marketing campaigns. Approved additional budget for AI/ML initiatives.',
+            '{"participants": ["Leadership Team"], "duration": "120 minutes", "action_items": 15, "decisions": 8}',
+            'slack', '#leadership',
+            '{"channel_id": "C4567890123", "message_count": 89, "thread_count": 25}',
+            ARRAY['budget', 'planning', 'q4', 'leadership']
+        );
+
+        -- Insert demo notifications
+        INSERT INTO notifications (user_id, organization_id, type, title, message, data, read_at)
+        VALUES
+        (
+            test_user_id, test_org_id, 'summary_created',
+            'New Summary Generated',
+            'Your Slack conversation from #general has been summarized',
+            '{"summary_id": "summary-1", "channel": "#general", "participants": 4}',
+            NULL
+        ),
+        (
+            test_user_id, test_org_id, 'export_completed',
+            'PDF Export Ready',
+            'Your summary export to PDF has been completed and is ready for download',
+            '{"export_id": "export-1", "format": "pdf", "file_size": "1.2MB"}',
+            NOW() - INTERVAL '2 hours'
+        ),
+        (
+            test_user_id, test_org_id, 'slack_connected',
+            'Slack Integration Active',
+            'Your Slack workspace has been successfully connected',
+            '{"team_name": "Ayan''s Team", "channels": 12}',
+            NOW() - INTERVAL '1 day'
+        ),
+        (
+            test_user_id, test_org_id, 'usage_limit',
+            'Monthly Usage Update',
+            'You''ve used 75% of your monthly AI summary quota',
+            '{"used": 75, "limit": 100, "plan": "pro"}',
+            NULL
+        ),
+        (
+            test_user_id, test_org_id, 'feature_update',
+            'New Feature: Bulk Export',
+            'You can now export multiple summaries at once using our new bulk export feature',
+            '{"feature": "bulk_export", "version": "2.1.0"}',
+            NOW() - INTERVAL '3 days'
+        );
+
+        -- Insert demo file uploads
+        INSERT INTO file_uploads (user_id, organization_id, filename, file_path, file_size, file_type, upload_status, processing_result)
+        VALUES
+        (
+            test_user_id, test_org_id,
+            'meeting-transcript-2024-01-15.pdf',
+            '/uploads/meeting-transcript-2024-01-15.pdf',
+            2457600, 'application/pdf', 'completed',
+            '{"pages": 15, "word_count": 3500, "summary_generated": true}'
+        ),
+        (
+            test_user_id, test_org_id,
+            'customer-feedback-report.docx',
+            '/uploads/customer-feedback-report.docx',
+            1843200, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'completed',
+            '{"pages": 8, "word_count": 2100, "summary_generated": true}'
+        );
+
+        -- Insert demo exports
+        INSERT INTO exports (user_id, organization_id, summary_id, export_type, export_data, status, file_url)
+        SELECT
+            test_user_id, test_org_id, s.id, 'pdf',
+            '{"format": "pdf", "template": "standard", "include_metadata": true}',
+            'completed',
+            '/exports/summary-' || s.id || '.pdf'
+        FROM summaries s
+        WHERE s.user_id = test_user_id
+        LIMIT 3;
+
+        RAISE NOTICE 'Successfully created demo data for test user: %', test_user_id;
+    ELSE
+        RAISE NOTICE 'Test user mohammadayan5442@gmail.com not found in auth.users';
     END IF;
 END $$;

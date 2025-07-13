@@ -22,9 +22,9 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, UserPlus, AlertCircle, CheckCircle, X } from 'lucide-react';
-import { inviteUserToOrganization } from '@/lib/auth';
+// Auth removed - demo mode
 import { sendEmail } from '@/lib/email-client';
-import { useAuth } from '@/components/providers/AuthProvider';
+// Auth removed - demo mode
 
 interface InviteTeamModalProps {
   open: boolean;
@@ -37,7 +37,9 @@ export default function InviteTeamModal({
   onOpenChange,
   onSuccess,
 }: InviteTeamModalProps) {
-  const { currentOrganization, user } = useAuth();
+  // Demo mode - no authentication required
+  const currentOrganization = { id: 'demo-org-123', name: 'Demo Organization', slug: 'demo-org' };
+  const user = { id: 'demo-user-123', email: 'demo@example.com', name: 'Demo User' };
   const [emails, setEmails] = useState<string[]>([]);
   const [currentEmail, setCurrentEmail] = useState('');
   const [role, setRole] = useState<'admin' | 'member'>('member');
@@ -163,8 +165,9 @@ export default function InviteTeamModal({
     try {
       for (const email of emails) {
         try {
-          // Add user to organization
-          await inviteUserToOrganization(email, currentOrganization.id, role);
+          // Demo mode - simulate user invitation
+          console.log('👥 Inviting user (demo mode):', email, 'to', currentOrganization.name, 'as', role);
+          await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
           
           // Send invitation email
           await sendInvitationEmail(email, currentOrganization.name);

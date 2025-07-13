@@ -1,0 +1,152 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm-up"
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 10
+      rampTo: 50
+      name: "Ramp-up"
+    # Sustained load phase
+    - duration: 300
+      arrivalRate: 50
+      name: "Sustained load"
+    # Peak load phase
+    - duration: 60
+      arrivalRate: 100
+      name: "Peak load"
+    # Cool-down phase
+    - duration: 60
+      arrivalRate: 10
+      name: "Cool-down"
+  
+  # Performance thresholds
+  ensure:
+    - http.response_time.p95: 2000  # 95% of requests should complete within 2s
+    - http.response_time.p99: 5000  # 99% of requests should complete within 5s
+    - http.codes.200: 95            # 95% success rate
+    - http.codes.500: 1             # Less than 1% server errors
+
+  # Variables for test data
+  variables:
+    testUsers:
+      - "test1@example.com"
+      - "test2@example.com"
+      - "test3@example.com"
+      - "test4@example.com"
+      - "test5@example.com"
+    
+  # Plugins for enhanced reporting
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+    
+scenarios:
+  # Landing page load test
+  - name: "Landing Page Load"
+    weight: 30
+    flow:
+      - get:
+          url: "/"
+          name: "Load landing page"
+          expect:
+            - statusCode: 200
+            - contentType: "text/html"
+      
+      - think: 2  # User reads the page for 2 seconds
+      
+      - get:
+          url: "/pricing"
+          name: "Load pricing page"
+          expect:
+            - statusCode: 200
+
+  # Dashboard access test (simulated authenticated user)
+  - name: "Dashboard Access"
+    weight: 25
+    flow:
+      - get:
+          url: "/dashboard"
+          name: "Access dashboard"
+          # Note: This will likely redirect to login in real scenario
+      
+      - think: 3
+      
+      - get:
+          url: "/api/summaries"
+          name: "Load summaries API"
+          headers:
+            Authorization: "Bearer mock-token"
+
+  # API endpoints load test
+  - name: "API Load Test"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/health"
+          name: "Health check"
+          expect:
+            - statusCode: 200
+      
+      - post:
+          url: "/api/webhooks"
+          name: "Webhook trigger"
+          headers:
+            Content-Type: "application/json"
+          json:
+            type: "test_notification"
+            data:
+              message: "Load test webhook"
+      
+      - get:
+          url: "/api/subscription/status"
+          name: "Subscription status"
+          headers:
+            Authorization: "Bearer mock-token"
+
+  # File upload simulation
+  - name: "File Upload Simulation"
+    weight: 15
+    flow:
+      - get:
+          url: "/upload"
+          name: "Load upload page"
+      
+      - think: 5  # User selects file
+      
+      # Simulate file upload (without actual file)
+      - post:
+          url: "/api/upload"
+          name: "File upload API"
+          headers:
+            Content-Type: "multipart/form-data"
+          formData:
+            file: "mock-file-content"
+            fileName: "test-document.pdf"
+
+  # Slack integration test
+  - name: "Slack Integration"
+    weight: 10
+    flow:
+      - get:
+          url: "/slack/connect"
+          name: "Slack connect page"
+      
+      - get:
+          url: "/api/slack/status"
+          name: "Slack status API"
+          headers:
+            Authorization: "Bearer mock-token"
+      
+      - post:
+          url: "/api/slack/summarize"
+          name: "Slack summarize API"
+          headers:
+            Content-Type: "application/json"
+            Authorization: "Bearer mock-token"
+          json:
+            channel: "general"
+            timeRange: "1h"

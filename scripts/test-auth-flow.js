@@ -1,141 +1,155 @@
-const { default: fetch } = require('node-fetch');
+const { createClient } = require('@supabase/supabase-js');
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const TEST_EMAIL = `test-${Date.now()}@example.com`;
+const TEST_PASSWORD = 'TestPassword123!';
+
+// Colors for console output
+const colors = {
+  green: '\x1b[32m',
+  red: '\x1b[31m',
+  yellow: '\x1b[33m',
+  blue: '\x1b[34m',
+  reset: '\x1b[0m',
+  bold: '\x1b[1m'
+};
+
+function log(color, message) {
+  console.log(`${color}${message}${colors.reset}`);
+}
 
 async function testAuthFlow() {
-  console.log('🧪 Testing Complete Authentication Flow...\n');
-  
+  log(colors.blue + colors.bold, '🧪 Testing Complete Authentication Flow...\n');
+
+  // Initialize Supabase client
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
+
+  let session = null;
+  let testsPassed = 0;
+  let totalTests = 0;
+
   try {
     // Test 1: Signup
-    console.log('1️⃣ Testing Signup...');
-    const signupResponse = await fetch(`${BASE_URL}/api/auth/signup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: 'Test User',
-        email: 'test@example.com',
-        password: 'password123'
-      })
+    totalTests++;
+    log(colors.cyan, '1️⃣ Testing Signup...');
+
+    const { data: signupData, error: signupError } = await supabase.auth.signUp({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD,
+      options: {
+        data: { name: 'Test User' }
+      }
     });
-    
-    const signupData = await signupResponse.json();
-    console.log('Signup Response:', signupData);
-    
-    if (signupResponse.ok) {
-      console.log('✅ Signup successful!');
+
+    if (signupError) {
+      log(colors.red, `❌ Signup failed: ${signupError.message}`);
     } else {
-      console.log('⚠️ Signup failed (might be expected if user exists)');
+      testsPassed++;
+      log(colors.green, `✅ Signup successful for: ${signupData.user?.email}`);
     }
-    
-    // Extract cookies from signup
-    const signupCookies = signupResponse.headers.get('set-cookie');
-    console.log('Signup Cookies:', signupCookies);
-    
+
     // Test 2: Login
-    console.log('\n2️⃣ Testing Login...');
-    const loginResponse = await fetch(`${BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: 'test@example.com',
-        password: 'password123'
-      })
+    totalTests++;
+    log(colors.cyan, '\n2️⃣ Testing Login...');
+
+    const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+      email: TEST_EMAIL,
+      password: TEST_PASSWORD
     });
-    
-    const loginData = await loginResponse.json();
-    console.log('Login Response:', loginData);
-    
-    if (!loginResponse.ok) {
-      console.log('❌ Login failed!');
-      return;
+
+    if (loginError) {
+      log(colors.red, `❌ Login failed: ${loginError.message}`);
+    } else if (loginData.user && loginData.session) {
+      testsPassed++;
+      session = loginData.session;
+      log(colors.green, `✅ Login successful for: ${loginData.user.email}`);
+      log(colors.blue, `   Session token: ${loginData.session.access_token.substring(0, 20)}...`);
     }
-    
-    console.log('✅ Login successful!');
-    
-    // Extract JWT token from login
-    const loginCookies = loginResponse.headers.get('set-cookie');
-    console.log('Login Cookies:', loginCookies);
-    
-    // Parse the auth-token cookie
-    let authToken = null;
-    if (loginCookies) {
-      const tokenMatch = loginCookies.match(/auth-token=([^;]+)/);
-      if (tokenMatch) {
-        authToken = tokenMatch[1];
-        console.log('Extracted Auth Token:', authToken.substring(0, 50) + '...');
+
+    // Test 3: Dashboard API
+    totalTests++;
+    log(colors.cyan, '\n3️⃣ Testing Dashboard API...');
+
+    if (session) {
+      const dashboardResponse = await fetch(`${BASE_URL}/api/dashboard`, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (dashboardResponse.ok) {
+        testsPassed++;
+        const dashboardData = await dashboardResponse.json();
+        log(colors.green, '✅ Dashboard API successful');
+        log(colors.blue, `   User: ${dashboardData.data?.user?.email || 'Unknown'}`);
+      } else {
+        const errorText = await dashboardResponse.text();
+        log(colors.red, `❌ Dashboard API failed: ${dashboardResponse.status}`);
+        log(colors.red, `   Response: ${errorText}`);
       }
-    }
-    
-    if (!authToken) {
-      console.log('❌ No auth token found in login response!');
-      return;
-    }
-    
-    // Test 3: Dashboard Access
-    console.log('\n3️⃣ Testing Dashboard Access...');
-    const dashboardResponse = await fetch(`${BASE_URL}/api/dashboard`, {
-      method: 'GET',
-      headers: {
-        'Cookie': `auth-token=${authToken}`
-      }
-    });
-    
-    const dashboardData = await dashboardResponse.json();
-    console.log('Dashboard Response:', dashboardData);
-    
-    if (!dashboardResponse.ok) {
-      console.log('❌ Dashboard access failed!');
-      return;
-    }
-    
-    console.log('✅ Dashboard access successful!');
-    console.log('User Data:', dashboardData.user);
-    console.log('Stats:', dashboardData.stats);
-    
-    // Test 4: Logout
-    console.log('\n4️⃣ Testing Logout...');
-    const logoutResponse = await fetch(`${BASE_URL}/api/auth/logout`, {
-      method: 'POST',
-      headers: {
-        'Cookie': `auth-token=${authToken}`
-      }
-    });
-    
-    const logoutData = await logoutResponse.json();
-    console.log('Logout Response:', logoutData);
-    
-    if (!logoutResponse.ok) {
-      console.log('❌ Logout failed!');
-      return;
-    }
-    
-    console.log('✅ Logout successful!');
-    
-    // Test 5: Dashboard Access After Logout (should fail)
-    console.log('\n5️⃣ Testing Dashboard Access After Logout (should fail)...');
-    const dashboardAfterLogoutResponse = await fetch(`${BASE_URL}/api/dashboard`, {
-      method: 'GET',
-      headers: {
-        'Cookie': `auth-token=${authToken}`
-      }
-    });
-    
-    if (dashboardAfterLogoutResponse.status === 401) {
-      console.log('✅ Dashboard correctly blocked after logout!');
     } else {
-      console.log('⚠️ Dashboard access after logout should be blocked');
+      log(colors.red, '❌ No session available for dashboard test');
     }
-    
-    console.log('\n🎉 All tests completed!');
-    
+
+    // Test 4: Session Validation
+    totalTests++;
+    log(colors.cyan, '\n4️⃣ Testing Session Validation...');
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      log(colors.red, `❌ Session validation failed: ${sessionError.message}`);
+    } else if (sessionData.session) {
+      testsPassed++;
+      log(colors.green, '✅ Session validation successful');
+      log(colors.blue, `   User: ${sessionData.session.user.email}`);
+    } else {
+      log(colors.red, '❌ No session found during validation');
+    }
+
+    // Test 5: Logout
+    totalTests++;
+    log(colors.cyan, '\n5️⃣ Testing Logout...');
+
+    const { error: logoutError } = await supabase.auth.signOut();
+
+    if (logoutError) {
+      log(colors.red, `❌ Logout failed: ${logoutError.message}`);
+    } else {
+      testsPassed++;
+      log(colors.green, '✅ Logout successful');
+    }
+
+    // Summary
+    log(colors.blue + colors.bold, '\n📋 Test Summary:');
+    log(colors.blue, `   Total Tests: ${totalTests}`);
+    log(colors.green, `   Passed: ${testsPassed}`);
+    log(colors.red, `   Failed: ${totalTests - testsPassed}`);
+    log(colors.blue, `   Success Rate: ${Math.round((testsPassed / totalTests) * 100)}%`);
+
+    if (testsPassed === totalTests) {
+      log(colors.green + colors.bold, '\n🎉 ALL TESTS PASSED! Auth flow is working correctly.');
+      return true;
+    } else {
+      log(colors.red + colors.bold, '\n❌ SOME TESTS FAILED! Please review and fix issues.');
+      return false;
+    }
   } catch (error) {
-    console.error('❌ Test failed:', error);
+    log(colors.red + colors.bold, `\n❌ Test suite failed: ${error.message}`);
+    return false;
   }
 }
 
-// Run the test
-testAuthFlow();
+// Main execution
+async function main() {
+  const success = await testAuthFlow();
+  process.exit(success ? 0 : 1);
+}
+
+if (require.main === module) {
+  main();
+}

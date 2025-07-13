@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@/lib/supabase';
 import { exchangeSlackOAuthCode, storeSlackIntegration } from '@/lib/slack';
 
 export async function GET(request: NextRequest) {
-  const response = NextResponse.next();
-  
   try {
+    // Demo mode - no authentication required
+    console.log('🔗 Slack Callback: Demo mode active');
+
     const { searchParams } = new URL(request.url);
     const code = searchParams.get('code');
     const state = searchParams.get('state'); // This is the organization ID
@@ -25,43 +25,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(errorUrl);
     }
 
-    // Get authenticated user
-    const supabase = createRouteHandlerClient(request, response);
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      const errorUrl = new URL('/login', request.url);
-      return NextResponse.redirect(errorUrl);
+    const { getCurrentUser } = await import('@/lib/auth');
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_SITE_URL}/login?error=authentication_required`
+      );
     }
 
     const organizationId = state;
 
-    // Verify user belongs to the organization
-    const { data: membership, error: membershipError } = await supabase
-      .from('user_organizations')
-      .select('role')
-      .eq('user_id', user.id)
-      .eq('organization_id', organizationId)
-      .single();
+    // Check if user has access to organization
+    const { hasPermission } = await import('@/lib/auth');
+    const hasAccess = await hasPermission(user.id, organizationId, 'member');
 
-    if (membershipError || !membership) {
-      const errorUrl = new URL('/dashboard', request.url);
-      errorUrl.searchParams.set('slack_error', 'access_denied');
-      return NextResponse.redirect(errorUrl);
-    }
-
-    // Check if user has admin or owner role
-    if (!['admin', 'owner'].includes(membership.role)) {
-      const errorUrl = new URL('/dashboard', request.url);
-      errorUrl.searchParams.set('slack_error', 'insufficient_permissions');
-      return NextResponse.redirect(errorUrl);
+    if (!hasAccess) {
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard?error=access_denied`
+      );
     }
 
     // Exchange code for access token
-    const oauthData = await exchangeSlackOAuthCode(code);
+    const oauthData = await exchangeSlackOAuthCode(
+      process.env.SLACK_CLIENT_ID!,
+      process.env.SLACK_CLIENT_SECRET!,
+      code,
+      `${process.env.NEXT_PUBLIC_SITE_URL}/api/slack/callback`
+    );
 
-    // Store Slack integration
-    await storeSlackIntegration(user.id, organizationId, oauthData);
+    // Store Slack integration (demo mode)
+    const userId = user?.id || 'demo-user-123';
+    await storeSlackIntegration(userId, organizationId, oauthData);
 
     // Redirect to dashboard with success message
     const successUrl = new URL('/dashboard', request.url);

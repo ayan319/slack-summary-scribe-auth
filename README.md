@@ -1,58 +1,63 @@
 # Slack Summary Scribe
 
-<!-- Test GitHub Actions: Minor change for CI/CD validation -->
-A powerful SaaS application that automatically summarizes Slack conversations using AI, helping teams stay informed and productive. Built with modern web technologies and designed for scalability.
+A powerful SaaS application that automatically summarizes Slack conversations using AI, helping teams stay informed and productive. Built with Next.js 15 and modern web technologies for production-ready scalability.
 
 ## 🚀 Features
 
-- **🧠 AI-Powered Summaries**: Automatically generate intelligent summaries using OpenRouter (DeepSeek R1 + GPT-4o-mini fallback)
-- **⚡ Real-time Integration**: Seamless integration with Slack workspaces via OAuth
-- **🔐 Secure Authentication**: User management with Clerk integration
-- **💾 Data Persistence**: Reliable data storage with Supabase PostgreSQL
-- **📤 Export Options**: Export summaries to PDF, Notion, and CRM systems
-- **📱 Responsive Design**: Modern, mobile-friendly interface built with Tailwind CSS
-- **🛡️ Security**: Built-in rate limiting, CORS protection, and security headers
-- **🧪 Comprehensive Testing**: Full test coverage with Jest and Testing Library
+- **🧠 AI-Powered Summaries**: Intelligent summaries using OpenRouter (DeepSeek R1 + GPT-4o-mini fallback)
+- **⚡ Real-time Integration**: Seamless Slack workspace integration via OAuth
+- **🔐 Secure Authentication**: Supabase Auth with session management
+- **💾 Data Persistence**: PostgreSQL with Supabase and Prisma ORM
+- **📤 Export Options**: PDF, Excel, and Notion export functionality
+- **📱 Responsive Design**: Mobile-first design with Tailwind CSS and shadcn/ui
+- **🛡️ Security**: Rate limiting, CORS protection, and Sentry monitoring
+- **🧪 Comprehensive Testing**: Jest, Playwright E2E tests, and accessibility compliance
+- **📊 Analytics**: PostHog integration for user behavior tracking
+- **🎨 Dark Mode**: System-aware theme switching with next-themes
 
 ## 🛠️ Tech Stack
 
-### Frontend
-- **React 18** - Modern React with hooks and functional components
-- **TypeScript** - Type-safe development
-- **Vite** - Fast build tool and development server
+### Frontend & Backend
+- **Next.js 15** - Full-stack React framework with App Router
+- **TypeScript** - Type-safe development across the stack
+- **React 18** - Modern React with Server Components
 - **Tailwind CSS** - Utility-first CSS framework
-- **Shadcn/ui** - Beautiful, accessible UI components
-- **React Router** - Client-side routing
+- **shadcn/ui** - Beautiful, accessible UI components
+- **Framer Motion** - Smooth animations and micro-interactions
 - **Tanstack Query** - Server state management
 
-### Backend
-- **Express.js** - Node.js web framework
-- **TypeScript** - Type-safe server development
-- **Supabase** - Backend-as-a-Service (Database, Auth, Storage)
-- **Slack Web API** - Slack workspace integration
-- **DeepSeek API** - AI-powered text summarization
+### Database & Auth
+- **Supabase** - PostgreSQL database with real-time features
+- **Prisma** - Type-safe database ORM
+- **Supabase Auth** - Authentication and session management
+- **Row Level Security** - Database-level security policies
 
-### Security & Performance
-- **Helmet** - Security headers
-- **CORS** - Cross-origin resource sharing
-- **Express Rate Limit** - API rate limiting
-- **Compression** - Response compression
-- **Morgan** - HTTP request logging
+### AI & Integrations
+- **OpenRouter** - AI API gateway (DeepSeek R1 + GPT-4o-mini)
+- **Slack Web API** - Slack workspace integration
+- **Notion API** - Export summaries to Notion pages
+
+### Monitoring & Analytics
+- **Sentry** - Error tracking and performance monitoring
+- **PostHog** - Product analytics and feature flags
+- **Vercel Analytics** - Web vitals and performance metrics
 
 ### Development & Testing
-- **Jest** - Testing framework
+- **Jest** - Unit and integration testing
+- **Playwright** - End-to-end testing
 - **React Testing Library** - Component testing
-- **ESLint** - Code linting
-- **Prettier** - Code formatting
-- **TSX** - TypeScript execution for development
+- **ESLint** - Code linting with TypeScript rules
+- **TypeScript ESLint** - Advanced TypeScript linting
+- **Accessibility Testing** - ARIA compliance and keyboard navigation
 
 ## 📋 Prerequisites
 
-- **Node.js 18+** and npm
+- **Node.js 18+** and npm/yarn/pnpm
 - **Supabase** account and project
 - **Slack App** with OAuth permissions
-- **DeepSeek API** key (or OpenAI as alternative)
+- **OpenRouter API** key (for DeepSeek R1 + GPT-4o-mini)
 - **Git** for version control
+- **Vercel** account (for deployment)
 
 ## 🔧 Local Development Setup
 
@@ -71,70 +76,87 @@ npm install
 
 ### 3. Environment Configuration
 
-Copy the example environment file and configure your variables:
+Create a `.env.local` file in the root directory:
 
 ```bash
-cp .env.example .env
+cp .env.example .env.local
 ```
 
-Edit `.env` with your actual values (see `.env.example` for all options):
+Configure your environment variables:
 
 ```env
-# Essential Configuration
+# Database
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+DATABASE_URL=your_supabase_database_url
+
+# AI Integration
+OPENROUTER_API_KEY=your_openrouter_api_key
+
+# Slack Integration
 SLACK_CLIENT_ID=your_slack_client_id
 SLACK_CLIENT_SECRET=your_slack_client_secret
-DEEPSEEK_API_KEY=your_deepseek_api_key
-FRONTEND_URL=http://localhost:5173
-PORT=4000
+
+# Application
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your_random_secret
+
+# Monitoring (Optional)
+SENTRY_DSN=your_sentry_dsn
+NEXT_PUBLIC_POSTHOG_KEY=your_posthog_key
+NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
 ```
 
 ### 4. Database Setup
 
-The Supabase migrations are included in the `supabase/migrations/` directory. Apply them through your Supabase dashboard or CLI.
+Set up your Supabase database:
+
+```bash
+# Generate Prisma client
+npx prisma generate
+
+# Push schema to database (development)
+npx prisma db push
+
+# Or run migrations (production)
+npx prisma migrate deploy
+```
 
 ### 5. Development Commands
 
-**Start Frontend Development Server:**
+**Start Development Server:**
 ```bash
 npm run dev
 ```
-*Access at: http://localhost:5173*
-
-**Start Backend API Server:**
-```bash
-npm run dev:api
-```
-*Access at: http://localhost:4000*
-
-**Run Both Concurrently:**
-```bash
-npm run dev:full
-```
+*Access at: http://localhost:3000*
 
 **Other Useful Commands:**
 ```bash
 # Run tests
 npm test
 
-# Run tests in watch mode
-npm run test:watch
+# Run E2E tests
+npm run test:e2e
 
 # Build for production
 npm run build
 
-# Build server for production
-npm run build:server
-
 # Start production server
 npm start
 
-# Format code
-npm run format
-
 # Lint code
 npm run lint
+
+# Type check
+npm run type-check
+
+# Database operations
+npx prisma studio          # Database GUI
+npx prisma generate        # Generate client
+npx prisma db push         # Push schema changes
+npx prisma migrate dev     # Create migration
 ```
 
 ## 🧪 Testing
@@ -191,31 +213,41 @@ npm start
 
 ## 🚀 Deployment
 
-### Frontend Deployment (Vercel)
+### Vercel Deployment (Recommended)
 
 1. **Connect Repository**: Link your GitHub repo to Vercel
-2. **Environment Variables**: Add production environment variables in Vercel dashboard
-3. **Build Settings**:
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-4. **Deploy**: Automatic deployment on git push
+2. **Framework Preset**: Vercel automatically detects Next.js
+3. **Environment Variables**: Add production environment variables in Vercel dashboard
+4. **Build Settings**:
+   - Build Command: `npm run build` (automatic)
+   - Output Directory: `.next` (automatic)
+5. **Deploy**: Automatic deployment on git push to main branch
 
-**Vercel Configuration** (vercel.json):
+**Required Environment Variables for Vercel:**
 
-```json
-{
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
-    }
-  ],
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/.*", "dest": "/index.html" }
-  ]
-}
+```env
+# Database
+SUPABASE_URL=your_production_supabase_url
+SUPABASE_ANON_KEY=your_production_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_production_service_role_key
+DATABASE_URL=your_production_database_url
+
+# AI Integration
+OPENROUTER_API_KEY=your_openrouter_api_key
+
+# Slack Integration
+SLACK_CLIENT_ID=your_slack_client_id
+SLACK_CLIENT_SECRET=your_slack_client_secret
+
+# Application
+NEXT_PUBLIC_SITE_URL=https://your-app.vercel.app
+NEXTAUTH_URL=https://your-app.vercel.app
+NEXTAUTH_SECRET=your_production_secret
+
+# Monitoring
+SENTRY_DSN=your_sentry_dsn
+NEXT_PUBLIC_POSTHOG_KEY=your_posthog_key
+NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
 ```
 
 ### Backend Deployment (Render/Heroku)
@@ -303,21 +335,49 @@ docker build -t slack-summary-scribe .
 docker run -p 3000:3000 --env-file .env slack-summary-scribe
 ```
 
-### Environment Variables for Production
+## 🔧 Environment Variables Reference
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NEXTAUTH_URL` | ✅ | Production URL (e.g., https://yourapp.vercel.app) |
-| `NEXTAUTH_SECRET` | ✅ | Random secret for NextAuth.js |
-| `SUPABASE_URL` | ✅ | Supabase project URL |
-| `SUPABASE_ANON_KEY` | ✅ | Supabase anonymous key |
-| `OPENROUTER_API_KEY` | ⚠️ | OpenRouter API key for AI analysis (DeepSeek R1 + GPT-4o-mini) |
-| `DEEPSEEK_API_KEY` | ⚠️ | Legacy DeepSeek API key (deprecated - use OpenRouter) |
-| `SLACK_BOT_TOKEN` | ⚠️ | Slack bot token (xoxb-...) |
-| `SLACK_SIGNING_SECRET` | ⚠️ | Slack app signing secret |
-| `NOTION_TOKEN` | ⚠️ | Notion integration token |
-| `SALESFORCE_TOKEN` | ⚠️ | Salesforce API token |
-| `HUBSPOT_TOKEN` | ⚠️ | HubSpot API token |
+### Core Application Variables
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `NEXT_PUBLIC_SITE_URL` | ✅ | Public URL of your application | `https://your-app.vercel.app` |
+| `NEXTAUTH_URL` | ✅ | NextAuth.js URL (same as SITE_URL) | `https://your-app.vercel.app` |
+| `NEXTAUTH_SECRET` | ✅ | Random secret for NextAuth.js | `your-random-32-char-string` |
+
+### Database Configuration
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `SUPABASE_URL` | ✅ | Supabase project URL | `https://xxx.supabase.co` |
+| `SUPABASE_ANON_KEY` | ✅ | Supabase anonymous key | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Supabase service role key | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` |
+| `DATABASE_URL` | ✅ | PostgreSQL connection string | `postgresql://postgres:[password]@db.xxx.supabase.co:5432/postgres` |
+
+### AI Integration
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `OPENROUTER_API_KEY` | ✅ | OpenRouter API key for AI models | `sk-or-v1-xxx` |
+
+### Slack Integration
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `SLACK_CLIENT_ID` | ⚠️ | Slack app client ID | `123456789.123456789` |
+| `SLACK_CLIENT_SECRET` | ⚠️ | Slack app client secret | `abcdef123456789` |
+
+### Monitoring & Analytics
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `SENTRY_DSN` | ⚠️ | Sentry error tracking DSN | `https://xxx@xxx.ingest.sentry.io/xxx` |
+| `NEXT_PUBLIC_POSTHOG_KEY` | ⚠️ | PostHog analytics key | `phc_xxx` |
+| `NEXT_PUBLIC_POSTHOG_HOST` | ⚠️ | PostHog host URL | `https://app.posthog.com` |
+
+**Legend:**
+- ✅ Required for basic functionality
+- ⚠️ Optional but recommended for full features
 
 ## 📚 API Documentation
 

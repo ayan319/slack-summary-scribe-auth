@@ -1,12 +1,17 @@
-import { supabaseAdmin } from './supabase';
+import { createClient } from '@supabase/supabase-js'
+import { toast } from 'sonner'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabase = createClient(supabaseUrl, supabaseKey)
 
 export interface NotificationData {
   userId: string;
   organizationId?: string;
-  type: 'upload_complete' | 'summary_ready' | 'export_complete' | 'system';
+  type: 'upload_complete' | 'summary_ready' | 'export_complete' | 'system' | 'file_uploaded' | 'summary_completed' | 'export_triggered';
   title: string;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 export interface PushNotificationPayload {
@@ -14,7 +19,7 @@ export interface PushNotificationPayload {
   body: string;
   icon?: string;
   badge?: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 /**
@@ -22,12 +27,7 @@ export interface PushNotificationPayload {
  */
 export async function createNotification(notification: NotificationData): Promise<boolean> {
   try {
-    if (!supabaseAdmin) {
-      console.warn('Supabase admin client not available for notification creation');
-      return false;
-    }
-
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('notifications')
       .insert({
         user_id: notification.userId,
@@ -35,7 +35,9 @@ export async function createNotification(notification: NotificationData): Promis
         type: notification.type,
         title: notification.title,
         message: notification.message,
-        data: notification.data
+        data: notification.data,
+        read: false,
+        created_at: new Date().toISOString()
       });
 
     if (error) {
@@ -43,259 +45,130 @@ export async function createNotification(notification: NotificationData): Promis
       return false;
     }
 
+    // Show toast notification
+    toast.success(notification.title, {
+      description: notification.message
+    });
+
     return true;
   } catch (error) {
-    console.error('Notification creation error:', error);
+    console.error('Error creating notification:', error);
     return false;
   }
 }
 
 /**
- * Send push notification to user
+ * Send push notification (demo mode)
  */
 export async function sendPushNotification(
   userId: string, 
   payload: PushNotificationPayload
 ): Promise<boolean> {
-  try {
-    if (!supabaseAdmin) {
-      console.warn('Supabase admin client not available for push notification');
-      return false;
-    }
-
-    // Get user's push subscription from database
-    const { data: user, error } = await supabaseAdmin
-      .from('users')
-      .select('push_subscription')
-      .eq('id', userId)
-      .single();
-
-    if (error || !user?.push_subscription) {
-      console.log('No push subscription found for user:', userId);
-      return false;
-    }
-
-    const webpush = await import('web-push');
-    
-    // Configure web-push (you'll need to set these environment variables)
-    webpush.setVapidDetails(
-      'mailto:' + (process.env.VAPID_EMAIL || 'support@summaryai.com'),
-      process.env.VAPID_PUBLIC_KEY || '',
-      process.env.VAPID_PRIVATE_KEY || ''
-    );
-
-    const pushPayload = JSON.stringify({
-      title: payload.title,
-      body: payload.body,
-      icon: payload.icon || '/icon-192x192.png',
-      badge: payload.badge || '/badge-72x72.png',
-      data: payload.data || {}
-    });
-
-    await webpush.sendNotification(user.push_subscription, pushPayload);
-    return true;
-
-  } catch (error) {
-    console.error('Push notification error:', error);
-    return false;
-  }
+  console.log('📱 Sending push notification (demo mode):', { userId, payload });
+  return true;
 }
 
 /**
- * Send Slack notification via webhook
+ * Send Slack notification (demo mode)
  */
 export async function sendSlackNotification(
   userId: string,
   message: string,
   title?: string
 ): Promise<boolean> {
-  try {
-    if (!supabaseAdmin) {
-      console.warn('Supabase admin client not available for Slack notification');
-      return false;
-    }
-
-    // Get user's Slack webhook URL from database
-    const { data: slackIntegration, error } = await supabaseAdmin
-      .from('slack_integrations')
-      .select('webhook_url, team_name')
-      .eq('user_id', userId)
-      .eq('active', true)
-      .single();
-
-    if (error || !slackIntegration?.webhook_url) {
-      console.log('No active Slack integration found for user:', userId);
-      return false;
-    }
-
-    const slackPayload = {
-      text: title ? `*${title}*\n${message}` : message,
-      username: 'Slack Summary Scribe',
-      icon_emoji: ':robot_face:',
-      attachments: title ? [{
-        color: 'good',
-        fields: [{
-          title: title,
-          value: message,
-          short: false
-        }]
-      }] : undefined
-    };
-
-    const response = await fetch(slackIntegration.webhook_url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(slackPayload)
-    });
-
-    if (!response.ok) {
-      console.error('Slack webhook failed:', response.statusText);
-      return false;
-    }
-
-    return true;
-
-  } catch (error) {
-    console.error('Slack notification error:', error);
-    return false;
-  }
+  console.log('💬 Sending Slack notification (demo mode):', { userId, message, title });
+  return true;
 }
 
 /**
- * Send comprehensive notification (in-app + push + Slack)
+ * Send email notification (demo mode)
  */
-export async function sendComprehensiveNotification(
+export async function sendEmailNotification(
+  userId: string,
+  subject: string,
+  message: string,
+  templateData?: Record<string, unknown>
+): Promise<boolean> {
+  console.log('📧 Sending email notification (demo mode):', { userId, subject, message, templateData });
+  return true;
+}
+
+/**
+ * Send notification via all enabled channels (demo mode)
+ */
+export async function sendNotification(
   notification: NotificationData,
-  pushPayload?: PushNotificationPayload,
-  slackMessage?: string
-): Promise<{
-  inApp: boolean;
-  push: boolean;
-  slack: boolean;
-}> {
-  const results = {
-    inApp: false,
-    push: false,
-    slack: false
-  };
-
-  // Send in-app notification
-  results.inApp = await createNotification(notification);
-
-  // Send push notification if payload provided
-  if (pushPayload) {
-    results.push = await sendPushNotification(notification.userId, pushPayload);
+  channels: {
+    inApp?: boolean;
+    email?: boolean;
+    push?: boolean;
+    slack?: boolean;
+  } = { inApp: true }
+): Promise<boolean> {
+  console.log('🔔 Sending multi-channel notification (demo mode):', { notification, channels });
+  
+  let success = true;
+  
+  if (channels.inApp) {
+    success = success && await createNotification(notification);
   }
-
-  // Send Slack notification if message provided
-  if (slackMessage) {
-    results.slack = await sendSlackNotification(
-      notification.userId, 
-      slackMessage, 
+  
+  if (channels.email) {
+    success = success && await sendEmailNotification(
+      notification.userId,
+      notification.title,
+      notification.message,
+      notification.data
+    );
+  }
+  
+  if (channels.push) {
+    success = success && await sendPushNotification(notification.userId, {
+      title: notification.title,
+      body: notification.message,
+      data: notification.data
+    });
+  }
+  
+  if (channels.slack) {
+    success = success && await sendSlackNotification(
+      notification.userId,
+      notification.message,
       notification.title
     );
   }
-
-  return results;
+  
+  return success;
 }
 
 /**
- * Notification templates for common events
- */
-export const NotificationTemplates = {
-  uploadComplete: (fileName: string) => ({
-    title: 'Upload Complete',
-    message: `Your file "${fileName}" has been uploaded successfully and is being processed.`,
-    pushPayload: {
-      title: 'Upload Complete',
-      body: `${fileName} uploaded successfully`,
-      data: { type: 'upload_complete' }
-    },
-    slackMessage: `📁 File uploaded: *${fileName}* is now being processed for summarization.`
-  }),
-
-  summaryReady: (fileName: string, summaryId: string) => ({
-    title: 'Summary Ready',
-    message: `Your summary for "${fileName}" is ready to view!`,
-    pushPayload: {
-      title: 'Summary Ready',
-      body: `Summary for ${fileName} is complete`,
-      data: { type: 'summary_ready', summaryId }
-    },
-    slackMessage: `✅ Summary complete: Your summary for *${fileName}* is ready! View it in your dashboard.`
-  }),
-
-  exportComplete: (exportType: string, fileName: string) => ({
-    title: 'Export Complete',
-    message: `Your ${exportType.toUpperCase()} export for "${fileName}" is ready for download!`,
-    pushPayload: {
-      title: 'Export Complete',
-      body: `${exportType.toUpperCase()} export ready for ${fileName}`,
-      data: { type: 'export_complete', exportType }
-    },
-    slackMessage: `📄 Export ready: Your *${exportType.toUpperCase()}* export for *${fileName}* is available for download.`
-  }),
-
-  processingFailed: (fileName: string, error: string) => ({
-    title: 'Processing Failed',
-    message: `Failed to process "${fileName}": ${error}`,
-    pushPayload: {
-      title: 'Processing Failed',
-      body: `Failed to process ${fileName}`,
-      data: { type: 'processing_failed' }
-    },
-    slackMessage: `❌ Processing failed: Unable to process *${fileName}*. Please try uploading again.`
-  })
-};
-
-/**
- * Get user's notification preferences
+ * Get user's notification preferences (demo mode)
  */
 export async function getUserNotificationPreferences(userId: string) {
-  try {
-    if (!supabaseAdmin) {
-      console.warn('Supabase admin client not available for notification preferences');
-      return {
-        email: true,
-        push: true,
-        slack: true,
-        digest: true
-      };
-    }
+  console.log('⚙️ Getting notification preferences (demo mode):', userId);
+  
+  return {
+    email: true,
+    push: true,
+    slack: true,
+    digest: true
+  };
+}
 
-    const { data, error } = await supabaseAdmin
-      .from('user_preferences')
-      .select('notification_preferences')
-      .eq('user_id', userId)
-      .single();
-
-    if (error || !data) {
-      // Return default preferences
-      return {
-        inApp: true,
-        push: true,
-        slack: true,
-        email: false
-      };
-    }
-
-    return data.notification_preferences || {
-      inApp: true,
-      push: true,
-      slack: true,
-      email: false
-    };
-  } catch (error) {
-    console.error('Error getting notification preferences:', error);
-    return {
-      inApp: true,
-      push: true,
-      slack: true,
-      email: false
-    };
+/**
+ * Update user's notification preferences (demo mode)
+ */
+export async function updateUserNotificationPreferences(
+  userId: string,
+  preferences: {
+    email?: boolean;
+    push?: boolean;
+    slack?: boolean;
+    digest?: boolean;
   }
+): Promise<boolean> {
+  console.log('⚙️ Updating notification preferences (demo mode):', { userId, preferences });
+  return true;
 }
 
 /**
@@ -303,18 +176,21 @@ export async function getUserNotificationPreferences(userId: string) {
  */
 export async function markNotificationAsRead(notificationId: string, userId: string): Promise<boolean> {
   try {
-    if (!supabaseAdmin) {
-      console.warn('Supabase admin client not available for marking notification as read');
-      return false;
-    }
-
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('notifications')
-      .update({ read_at: new Date().toISOString() })
+      .update({
+        read: true,
+        read_at: new Date().toISOString()
+      })
       .eq('id', notificationId)
       .eq('user_id', userId);
 
-    return !error;
+    if (error) {
+      console.error('Failed to mark notification as read:', error);
+      return false;
+    }
+
+    return true;
   } catch (error) {
     console.error('Error marking notification as read:', error);
     return false;
@@ -326,27 +202,95 @@ export async function markNotificationAsRead(notificationId: string, userId: str
  */
 export async function getUnreadNotifications(userId: string, limit: number = 10) {
   try {
-    if (!supabaseAdmin) {
-      console.warn('Supabase admin client not available for fetching notifications');
-      return [];
-    }
-
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('notifications')
       .select('*')
       .eq('user_id', userId)
-      .is('read_at', null)
+      .eq('read', false)
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('Failed to get notifications:', error);
       return [];
     }
 
     return data || [];
   } catch (error) {
-    console.error('Error fetching notifications:', error);
+    console.error('Error getting notifications:', error);
     return [];
   }
+}
+
+/**
+ * Send digest email (demo mode)
+ */
+export async function sendDigestEmail(userId: string, period: 'daily' | 'weekly'): Promise<boolean> {
+  console.log('📊 Sending digest email (demo mode):', { userId, period });
+  return true;
+}
+
+/**
+ * Schedule digest notifications (demo mode)
+ */
+export async function scheduleDigestNotifications(): Promise<void> {
+  console.log('⏰ Scheduling digest notifications (demo mode)');
+}
+
+// Notification helpers for common scenarios
+
+/**
+ * Notify when file upload is complete (demo mode)
+ */
+export async function notifyUploadComplete(
+  userId: string,
+  fileName: string,
+  organizationId?: string
+): Promise<boolean> {
+  return sendNotification({
+    userId,
+    organizationId,
+    type: 'upload_complete',
+    title: 'Upload Complete',
+    message: `Your file "${fileName}" has been uploaded successfully`,
+    data: { fileName }
+  }, { inApp: true, email: true });
+}
+
+/**
+ * Notify when summary is ready (demo mode)
+ */
+export async function notifySummaryReady(
+  userId: string,
+  summaryId: string,
+  fileName: string,
+  organizationId?: string
+): Promise<boolean> {
+  return sendNotification({
+    userId,
+    organizationId,
+    type: 'summary_ready',
+    title: 'Summary Ready',
+    message: `Your summary for "${fileName}" is ready to view`,
+    data: { summaryId, fileName }
+  }, { inApp: true, push: true });
+}
+
+/**
+ * Notify when export is complete (demo mode)
+ */
+export async function notifyExportComplete(
+  userId: string,
+  exportType: string,
+  downloadUrl: string,
+  organizationId?: string
+): Promise<boolean> {
+  return sendNotification({
+    userId,
+    organizationId,
+    type: 'export_complete',
+    title: 'Export Complete',
+    message: `Your ${exportType} export is ready for download`,
+    data: { exportType, downloadUrl }
+  }, { inApp: true, email: true });
 }

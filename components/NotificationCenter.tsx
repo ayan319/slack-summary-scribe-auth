@@ -25,6 +25,7 @@ interface Notification {
   message: string;
   data?: Record<string, any>;
   read_at?: string;
+  read?: boolean;
   created_at: string;
 }
 
@@ -51,16 +52,16 @@ export default function NotificationCenter({ className }: NotificationCenterProp
     try {
       setLoading(true);
       const response = await fetch('/api/notifications?limit=20');
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch notifications');
       }
 
       const data = await response.json();
       const notificationList = data.data || [];
-      
+
       setNotifications(notificationList);
-      setUnreadCount(notificationList.filter((n: Notification) => !n.read_at).length);
+      setUnreadCount(notificationList.filter((n: Notification) => !n.read_at && !n.read).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
       toast.error('Failed to load notifications');
@@ -232,6 +233,7 @@ export default function NotificationCenter({ className }: NotificationCenterProp
           size="sm"
           onClick={() => setIsOpen(!isOpen)}
           className="relative"
+          data-testid="notifications-dropdown"
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -43,16 +43,12 @@ interface UploadsTabProps {
   organizationId?: string;
 }
 
-export default function UploadsTab({ organizationId }: UploadsTabProps) {
+const UploadsTab = React.memo(function UploadsTab({ organizationId }: UploadsTabProps) {
   const [uploads, setUploads] = useState<FileUploadData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchUploads();
-  }, [organizationId]);
-
-  const fetchUploads = async () => {
+  const fetchUploads = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -75,7 +71,11 @@ export default function UploadsTab({ organizationId }: UploadsTabProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId]);
+
+  useEffect(() => {
+    fetchUploads();
+  }, [fetchUploads]);
 
   const handleUploadComplete = (fileId: string) => {
     // Refresh uploads list
@@ -87,8 +87,10 @@ export default function UploadsTab({ organizationId }: UploadsTabProps) {
   };
 
   const handleViewSummary = (summaryId: string) => {
-    // Navigate to summary detail page
-    window.location.href = `/dashboard/summaries/${summaryId}`;
+    // Navigate to summary detail page using Next.js router
+    if (typeof window !== 'undefined') {
+      window.location.href = `/dashboard/summaries/${summaryId}`;
+    }
   };
 
   const handleExport = async (summaryId: string, exportType: 'pdf' | 'excel' | 'notion') => {
@@ -288,4 +290,6 @@ export default function UploadsTab({ organizationId }: UploadsTabProps) {
       </Card>
     </div>
   );
-}
+});
+
+export default UploadsTab;

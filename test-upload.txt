@@ -1,0 +1,13 @@
+This is a test file for upload functionality.
+
+Meeting Summary:
+- Discussed project timeline
+- Assigned tasks to team members
+- Set next meeting date
+
+Action Items:
+1. Complete design mockups by Friday
+2. Review code changes
+3. Update documentation
+
+This is a simple test document to verify the upload and summarization pipeline is working correctly.

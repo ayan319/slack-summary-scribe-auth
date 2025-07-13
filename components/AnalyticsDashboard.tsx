@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -51,7 +51,7 @@ interface AnalyticsDashboardProps {
   isAdmin?: boolean;
 }
 
-export default function AnalyticsDashboard({ organizationId, isAdmin = false }: AnalyticsDashboardProps) {
+const AnalyticsDashboard = React.memo(function AnalyticsDashboard({ organizationId, isAdmin = false }: AnalyticsDashboardProps) {
   const [metrics, setMetrics] = useState<UsageMetrics>({
     uploads: 0,
     summaries: 0,
@@ -62,11 +62,7 @@ export default function AnalyticsDashboard({ organizationId, isAdmin = false }: 
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d');
 
-  useEffect(() => {
-    fetchAnalyticsData();
-  }, [organizationId, timeRange]);
-
-  const fetchAnalyticsData = async () => {
+  const fetchAnalyticsData = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -89,7 +85,11 @@ export default function AnalyticsDashboard({ organizationId, isAdmin = false }: 
     } finally {
       setLoading(false);
     }
-  };
+  }, [organizationId, timeRange]);
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, [fetchAnalyticsData]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -383,4 +383,6 @@ export default function AnalyticsDashboard({ organizationId, isAdmin = false }: 
       </Card>
     </div>
   );
-}
+});
+
+export default AnalyticsDashboard;

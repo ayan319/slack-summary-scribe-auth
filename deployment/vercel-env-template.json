@@ -1,0 +1,127 @@
+{
+  "name": "Slack Summary Scribe - Production Environment Variables",
+  "description": "Complete environment configuration for Vercel deployment",
+  "variables": [
+    {
+      "key": "NEXT_PUBLIC_SUPABASE_URL",
+      "value": "https://your-project.supabase.co",
+      "target": ["production", "preview", "development"],
+      "type": "plain",
+      "required": true,
+      "description": "Supabase project URL - get from Supabase dashboard"
+    },
+    {
+      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "target": ["production", "preview", "development"],
+      "type": "plain",
+      "required": true,
+      "description": "Supabase anonymous key - get from Supabase dashboard"
+    },
+    {
+      "key": "SUPABASE_SERVICE_ROLE_KEY",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "target": ["production", "preview"],
+      "type": "secret",
+      "required": true,
+      "description": "Supabase service role key - KEEP SECRET, for server-side operations"
+    },
+    {
+      "key": "OPENROUTER_API_KEY",
+      "value": "sk-or-v1-...",
+      "target": ["production", "preview", "development"],
+      "type": "secret",
+      "required": true,
+      "description": "OpenRouter API key for DeepSeek AI integration"
+    },
+    {
+      "key": "NEXT_PUBLIC_SITE_URL",
+      "value": "https://your-app.vercel.app",
+      "target": ["production", "preview", "development"],
+      "type": "plain",
+      "required": true,
+      "description": "Your deployed Vercel URL for OAuth redirects"
+    },
+    {
+      "key": "SLACK_CLIENT_ID",
+      "value": "1234567890.1234567890",
+      "target": ["production", "preview", "development"],
+      "type": "plain",
+      "required": false,
+      "description": "Slack OAuth app client ID"
+    },
+    {
+      "key": "SLACK_CLIENT_SECRET",
+      "value": "abcdef1234567890abcdef1234567890",
+      "target": ["production", "preview"],
+      "type": "secret",
+      "required": false,
+      "description": "Slack OAuth app client secret - KEEP SECRET"
+    },
+    {
+      "key": "NEXTAUTH_SECRET",
+      "value": "your-nextauth-secret-here",
+      "target": ["production", "preview"],
+      "type": "secret",
+      "required": false,
+      "description": "NextAuth.js secret for JWT signing - generate random string"
+    },
+    {
+      "key": "SENTRY_DSN",
+      "value": "https://...@sentry.io/...",
+      "target": ["production", "preview"],
+      "type": "secret",
+      "required": false,
+      "description": "Sentry DSN for error tracking"
+    },
+    {
+      "key": "RESEND_API_KEY",
+      "value": "re_...",
+      "target": ["production", "preview"],
+      "type": "secret",
+      "required": false,
+      "description": "Resend API key for email notifications"
+    },
+    {
+      "key": "CASHFREE_APP_ID",
+      "value": "your-cashfree-app-id",
+      "target": ["production", "preview"],
+      "type": "plain",
+      "required": false,
+      "description": "Cashfree payment gateway app ID"
+    },
+    {
+      "key": "CASHFREE_SECRET_KEY",
+      "value": "your-cashfree-secret",
+      "target": ["production", "preview"],
+      "type": "secret",
+      "required": false,
+      "description": "Cashfree payment gateway secret key - KEEP SECRET"
+    },
+    {
+      "key": "DATABASE_URL",
+      "value": "postgresql://...",
+      "target": ["production", "preview"],
+      "type": "secret",
+      "required": false,
+      "description": "Direct database connection URL (if using Prisma)"
+    }
+  ],
+  "setup_instructions": [
+    "1. Copy your Supabase URL and keys from https://supabase.com/dashboard/project/[your-project]/settings/api",
+    "2. Get OpenRouter API key from https://openrouter.ai/keys",
+    "3. Set NEXT_PUBLIC_SITE_URL to your Vercel deployment URL",
+    "4. Configure Slack OAuth app at https://api.slack.com/apps",
+    "5. Generate NEXTAUTH_SECRET: openssl rand -base64 32",
+    "6. Set up Sentry project at https://sentry.io for error tracking",
+    "7. Configure Resend at https://resend.com for email notifications",
+    "8. Set up Cashfree at https://cashfree.com for payments (optional)"
+  ],
+  "security_notes": [
+    "⚠️ NEVER commit secrets to version control",
+    "⚠️ Use 'secret' type for sensitive values in Vercel",
+    "⚠️ Rotate keys regularly in production",
+    "⚠️ Validate all URLs use HTTPS in production",
+    "⚠️ Test environment variables in preview before production"
+  ]
+}

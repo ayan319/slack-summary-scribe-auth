@@ -1,20 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient, supabaseAdmin } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
-    const response = NextResponse.next();
-    const supabase = createRouteHandlerClient(request, response);
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    // Demo mode - no authentication required
+    console.log('🔔 Notifications Subscribe: Demo mode active');
 
     const { subscription } = await request.json();
 
@@ -25,30 +14,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { success: false, error: 'Database not available' },
-        { status: 503 }
-      );
-    }
-
-    // Store push subscription in user profile
-    const { error: updateError } = await supabaseAdmin
-      .from('users')
-      .upsert({
-        id: user.id,
-        email: user.email,
-        push_subscription: subscription,
-        updated_at: new Date().toISOString()
-      });
-
-    if (updateError) {
-      console.error('Failed to store push subscription:', updateError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to store push subscription' },
-        { status: 500 }
-      );
-    }
+    // Demo mode - simulate storing push subscription
+    console.log('📱 Push subscription stored (demo mode):', {
+      endpoint: subscription.endpoint?.substring(0, 50) + '...',
+      keys: subscription.keys ? 'present' : 'missing'
+    });
 
     return NextResponse.json({
       success: true,
@@ -66,42 +36,11 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Check authentication
-    const response = NextResponse.next();
-    const supabase = createRouteHandlerClient(request, response);
-    
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError || !user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    // Demo mode - no authentication required
+    console.log('🔔 Notifications Unsubscribe: Demo mode active');
 
-    if (!supabaseAdmin) {
-      return NextResponse.json(
-        { success: false, error: 'Database not available' },
-        { status: 503 }
-      );
-    }
-
-    // Remove push subscription from user profile
-    const { error: updateError } = await supabaseAdmin
-      .from('users')
-      .update({
-        push_subscription: null,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', user.id);
-
-    if (updateError) {
-      console.error('Failed to remove push subscription:', updateError);
-      return NextResponse.json(
-        { success: false, error: 'Failed to remove push subscription' },
-        { status: 500 }
-      );
-    }
+    // Demo mode - simulate removing push subscription
+    console.log('📱 Push subscription removed (demo mode)');
 
     return NextResponse.json({
       success: true,

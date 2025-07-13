@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,42 +33,11 @@ interface UploadedFile {
   error?: string;
 }
 
-export default function FileUpload({ organizationId, onUploadComplete }: FileUploadProps) {
+const FileUpload = React.memo(function FileUpload({ organizationId, onUploadComplete }: FileUploadProps) {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (acceptedFiles.length === 0) return;
-
-    setIsUploading(true);
-    
-    for (const file of acceptedFiles) {
-      const fileId = Math.random().toString(36).substring(7);
-      
-      // Add file to state
-      setUploadedFiles(prev => [...prev, {
-        id: fileId,
-        file,
-        status: 'uploading',
-        progress: 0
-      }]);
-
-      try {
-        await uploadFile(file, fileId, organizationId);
-      } catch (error) {
-        console.error('Upload error:', error);
-        setUploadedFiles(prev => prev.map(f => 
-          f.id === fileId 
-            ? { ...f, status: 'failed', error: 'Upload failed' }
-            : f
-        ));
-      }
-    }
-    
-    setIsUploading(false);
-  }, [organizationId]);
-
-  const uploadFile = async (file: File, fileId: string, orgId?: string) => {
+  const uploadFile = useCallback(async (file: File, fileId: string, orgId?: string) => {
     const formData = new FormData();
     formData.append('file', file);
     if (orgId) {
@@ -134,7 +103,38 @@ export default function FileUpload({ organizationId, onUploadComplete }: FileUpl
         description: error instanceof Error ? error.message : 'Please try again'
       });
     }
-  };
+  }, [onUploadComplete]);
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+
+    setIsUploading(true);
+
+    for (const file of acceptedFiles) {
+      const fileId = Math.random().toString(36).substring(7);
+
+      // Add file to state
+      setUploadedFiles(prev => [...prev, {
+        id: fileId,
+        file,
+        status: 'uploading',
+        progress: 0
+      }]);
+
+      try {
+        await uploadFile(file, fileId, organizationId);
+      } catch (error) {
+        console.error('Upload error:', error);
+        setUploadedFiles(prev => prev.map(f =>
+          f.id === fileId
+            ? { ...f, status: 'failed', error: 'Upload failed' }
+            : f
+        ));
+      }
+    }
+
+    setIsUploading(false);
+  }, [organizationId, uploadFile]);
 
   const pollProcessingStatus = async (uploadId: string, fileId: string) => {
     const maxAttempts = 30; // 5 minutes max
@@ -202,15 +202,15 @@ export default function FileUpload({ organizationId, onUploadComplete }: FileUpl
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'uploading':
-        return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
+        return <Loader2 className="h-4 w-4 animate-spin text-blue-500" aria-label="Uploading file" />;
       case 'processing':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-yellow-500" aria-label="Processing file" />;
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-green-500" aria-label="File upload completed" />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-red-500" aria-label="File upload failed" />;
       default:
-        return <File className="h-4 w-4" />;
+        return <File className="h-4 w-4" aria-label="File" />;
     }
   };
 
@@ -245,10 +245,14 @@ export default function FileUpload({ organizationId, onUploadComplete }: FileUpl
         <CardContent>
           <div
             {...getRootProps()}
+            role="button"
+            tabIndex={0}
+            aria-label="File upload area. Drag and drop files here or click to select files"
+            aria-describedby="upload-description"
             className={`
               border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-              ${isDragActive 
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' 
+              ${isDragActive
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
                 : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
               }
               ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}
@@ -266,7 +270,7 @@ export default function FileUpload({ organizationId, onUploadComplete }: FileUpl
                   <p className="text-gray-600 dark:text-gray-400">
                     Drag & drop files here, or click to select files
                   </p>
-                  <p className="text-sm text-gray-500 dark:text-gray-500">
+                  <p id="upload-description" className="text-sm text-gray-500 dark:text-gray-500">
                     Supports PDF and DOCX files up to 10MB
                   </p>
                 </div>
@@ -336,4 +340,6 @@ export default function FileUpload({ organizationId, onUploadComplete }: FileUpl
       )}
     </div>
   );
-}
+});
+
+export default FileUpload;

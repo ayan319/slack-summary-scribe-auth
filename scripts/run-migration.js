@@ -20,7 +20,7 @@ async function runMigration() {
     console.log('🚀 Running database migration...');
     
     // Read the migration file
-    const migrationPath = path.join(__dirname, '..', 'supabase', 'migrations', '001_initial_schema.sql');
+    const migrationPath = path.join(__dirname, '..', 'supabase', 'migrations', '004_advanced_saas_features.sql');
     const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
     
     // Split the SQL into individual statements

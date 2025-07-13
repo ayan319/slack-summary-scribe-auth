@@ -1,59 +1,31 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 
 export async function GET() {
   const startTime = Date.now();
-  
+
   try {
     // Environment variables check
     const envCheck = {
       supabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       supabaseServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      deepseekApiKey: !!process.env.DEEPSEEK_API_KEY,
+      openrouterApiKey: !!process.env.OPENROUTER_API_KEY,
       sentryDsn: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
       jwtSecret: !!process.env.JWT_SECRET,
       appUrl: !!process.env.NEXT_PUBLIC_APP_URL,
     };
 
-    // Database connectivity check
-    let dbStatus = 'unknown';
-    let dbError = null;
-    
-    try {
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-        const supabase = createClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        );
-        
-        // Simple health check query
-        const { data, error } = await supabase
-          .from('summaries')
-          .select('count')
-          .limit(1);
-          
-        if (error) {
-          dbStatus = 'error';
-          dbError = error.message;
-        } else {
-          dbStatus = 'connected';
-        }
-      } else {
-        dbStatus = 'not_configured';
-      }
-    } catch (error) {
-      dbStatus = 'error';
-      dbError = error instanceof Error ? error.message : 'Unknown database error';
-    }
+    // Database status (disabled for auth-free mode)
+    const dbStatus = 'disabled';
+    const dbError = null;
 
     // AI service check
     let aiStatus = 'unknown';
-    if (process.env.DEEPSEEK_API_KEY) {
-      if (process.env.DEEPSEEK_API_KEY === 'your_deepseek_api_key_here') {
-        aiStatus = 'placeholder';
-      } else {
+    if (process.env.OPENROUTER_API_KEY) {
+      if (process.env.OPENROUTER_API_KEY.startsWith('sk-or-v1-')) {
         aiStatus = 'configured';
+      } else {
+        aiStatus = 'placeholder';
       }
     } else {
       aiStatus = 'not_configured';
@@ -61,7 +33,7 @@ export async function GET() {
 
     const responseTime = Date.now() - startTime;
     const allEnvVarsPresent = Object.values(envCheck).every(Boolean);
-    const isHealthy = dbStatus === 'connected' && aiStatus === 'configured' && allEnvVarsPresent;
+    const isHealthy = ['connected', 'disabled'].includes(dbStatus) && aiStatus === 'configured' && allEnvVarsPresent;
 
     return NextResponse.json({
       status: isHealthy ? 'ok' : 'degraded',

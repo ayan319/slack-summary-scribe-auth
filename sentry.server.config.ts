@@ -13,12 +13,18 @@ Sentry.init({
   // Setting this option to true will print useful information to the console while you're setting up Sentry.
   debug: process.env.NODE_ENV === 'development',
 
-  // Enhanced server integrations
+  // Enhanced server integrations with reduced OpenTelemetry warnings
   integrations: [
     Sentry.httpIntegration({
       breadcrumbs: true,
     }),
+    // Disable auto-instrumentation to reduce warnings
+    Sentry.nodeContextIntegration(),
+    Sentry.localVariablesIntegration(),
+    Sentry.requestDataIntegration(),
   ],
+
+  // Note: OpenTelemetry warnings are expected from Sentry's auto-instrumentation
 
   // Enhanced performance monitoring
   // profilesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,

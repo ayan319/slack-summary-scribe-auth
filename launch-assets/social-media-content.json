@@ -1,0 +1,35 @@
+{
+  "twitter": {
+    "launch_day": "🚀 Launching Slack Summary Scribe on Product Hunt! AI-powered summaries that keep your team in sync. Never miss important conversations again! #ProductHunt #AI #Slack #Productivity",
+    "pre_launch": [
+      "🔥 Something big is coming to Product Hunt next week! AI + Slack + Productivity = 🤯",
+      "📊 Beta users report 40% improvement in team communication. Ready for the big reveal?",
+      "🚀 T-minus 3 days until launch! Who's excited for AI-powered Slack summaries?"
+    ],
+    "post_launch": [
+      "🎉 We're LIVE on Product Hunt! Thank you for all the support! 🙏",
+      "📈 Trending on Product Hunt! The response has been incredible!",
+      "🏆 Made it to the top 10! Thank you to our amazing community!"
+    ]
+  },
+  "linkedin": {
+    "launch_announcement": "Excited to launch Slack Summary Scribe! Our AI creates intelligent summaries of Slack conversations, helping remote teams stay connected and productive. Perfect for busy professionals who need to stay in the loop.",
+    "thought_leadership": [
+      "The Future of Remote Team Communication: How AI is Transforming Workplace Productivity",
+      "Why 73% of Remote Teams Struggle with Information Overload (And How to Fix It)",
+      "Building a SaaS Product: Lessons from Our Journey to Product Hunt"
+    ]
+  },
+  "instagram": {
+    "stories": [
+      "Behind the scenes: Building an AI-powered SaaS",
+      "Product Hunt launch day prep",
+      "Team celebration posts"
+    ],
+    "posts": [
+      "Visual showcase of the product",
+      "Team introduction posts",
+      "User testimonials"
+    ]
+  }
+}

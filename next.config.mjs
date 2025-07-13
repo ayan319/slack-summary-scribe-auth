@@ -33,11 +33,33 @@ const nextConfig = {
   },
 
   // Server external packages for better performance
-  serverExternalPackages: ['pdf-parse', 'mammoth', 'exceljs'],
+  serverExternalPackages: ['pdf-parse', 'mammoth', 'exceljs', 'posthog-node'],
 
   // Experimental features for optimization
   experimental: {
     optimizePackageImports: ['@supabase/supabase-js', 'lucide-react'],
+  },
+
+  // Webpack configuration to handle Node.js modules
+  webpack: (config, { isServer }) => {
+    // Handle Node.js modules for PostHog and other packages
+    if (isServer) {
+      config.externals.push('posthog-node');
+    }
+
+    // Handle node: protocol imports
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+      readline: false,
+      crypto: false,
+      stream: false,
+      util: false,
+      buffer: false,
+      events: false,
+    };
+
+    return config;
   },
 };
 
