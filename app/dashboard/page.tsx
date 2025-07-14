@@ -41,6 +41,7 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import NotificationCenter from '@/components/NotificationCenter';
 import type { Summary } from '@/types/api';
+import { upsertUserProfileFromAuth } from '@/lib/upsertUserProfile';
 
 interface DashboardData {
   user: {
@@ -154,7 +155,8 @@ function DashboardContent() {
     // Handle user loading state changes
     if (!userLoading) {
       if (user) {
-        // User is authenticated, fetch dashboard data
+        // User is authenticated, ensure profile is synced and fetch dashboard data
+        upsertUserProfileFromAuth(user);
         fetchDashboardData();
       } else {
         // No user, redirect to login

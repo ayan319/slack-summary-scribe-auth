@@ -12,6 +12,7 @@ import { Loader2, Github, Mail } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useUser } from '@/lib/user-context'
 import { toast } from 'sonner'
+import { upsertUserProfileFromAuth } from '@/lib/upsertUserProfile'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -70,26 +71,8 @@ export default function LoginPage() {
         router.replace(redirectPath)
 
         // Handle user profile sync in background (non-blocking)
-        setTimeout(async () => {
-          try {
-            // Use the safe upsert function instead of direct table access
-            const { error: upsertError } = await supabase.rpc('upsert_user_profile', {
-              user_name: data.user.user_metadata?.name || data.user.user_metadata?.full_name,
-              user_avatar_url: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture
-            })
-
-            if (upsertError) {
-              // Log error but don't show to user since they're already redirected
-              if (process.env.NODE_ENV === 'development') {
-                console.warn('Background profile sync failed:', upsertError)
-              }
-            }
-          } catch (error) {
-            // Silent background error - user is already logged in and redirected
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('Background profile sync error:', error)
-            }
-          }
+        setTimeout(() => {
+          upsertUserProfileFromAuth(data.user);
         }, 100) // Small delay to ensure redirect happens first
       }
     } catch (err) {
