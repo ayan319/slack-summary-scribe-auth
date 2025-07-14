@@ -14,6 +14,12 @@ const FILTERED_WARNINGS = [
   'componentWillReceiveProps has been renamed',
   'componentWillMount has been renamed',
   'componentWillUpdate has been renamed',
+  'Could not upsert user record (non-blocking)',
+  'User profile sync error (non-blocking)',
+  'Email service initialized in fallback mode',
+  'Flushing client reports based on interval',
+  'No outcomes to send',
+  'Recording is off, propagating context',
 ];
 
 // Store original console methods
@@ -53,6 +59,59 @@ export function initConsoleFiltering() {
     };
   }
 }
+
+// Development-safe logging utilities
+export const isDevelopment = process.env.NODE_ENV === 'development';
+export const isProduction = process.env.NODE_ENV === 'production';
+
+// Safe console logging that only works in development
+export const devLog = {
+  log: (...args: any[]) => {
+    if (isDevelopment) {
+      originalConsole.log(...args);
+    }
+  },
+  warn: (...args: any[]) => {
+    if (isDevelopment) {
+      originalConsole.warn(...args);
+    }
+  },
+  error: (...args: any[]) => {
+    if (isDevelopment) {
+      originalConsole.error(...args);
+    }
+  },
+  info: (...args: any[]) => {
+    if (isDevelopment) {
+      console.info(...args);
+    }
+  },
+  debug: (...args: any[]) => {
+    if (isDevelopment) {
+      console.debug(...args);
+    }
+  }
+};
+
+// Production-safe error logging (only for critical errors)
+export const prodLog = {
+  error: (message: string, error?: any) => {
+    // Only log critical errors in production
+    if (isProduction) {
+      originalConsole.error(`[CRITICAL] ${message}`, error);
+    } else {
+      originalConsole.error(message, error);
+    }
+  },
+  warn: (message: string, data?: any) => {
+    // Production warnings for important issues
+    if (isProduction) {
+      originalConsole.warn(`[IMPORTANT] ${message}`, data);
+    } else {
+      originalConsole.warn(message, data);
+    }
+  }
+};
 
 /**
  * Restore original console methods

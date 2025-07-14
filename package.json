@@ -16,6 +16,8 @@
     "seed-test-user": "npx tsx scripts/seed-test-user.ts",
     "test:e2e": "playwright test",
     "test:auth": "playwright test tests/e2e/auth-system.spec.ts",
+    "validate:deployment": "node scripts/validate-vercel-deployment.js",
+    "deploy:validate": "npm run build && npm run validate:deployment",
     "test:load": "artillery run tests/load/basic-load-test.yml",
     "test:stress": "artillery run tests/load/stress-test.yml",
     "test:load:report": "artillery run tests/load/basic-load-test.yml --output load-test-report.json",
