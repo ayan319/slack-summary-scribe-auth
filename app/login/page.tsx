@@ -58,54 +58,39 @@ export default function LoginPage() {
       }
 
       if (data.user && data.session) {
-        // Ensure user record exists in our users table (non-blocking)
-        try {
-          const { error: upsertError } = await supabase
-            .from('users')
-            .upsert({
-              id: data.user.id,
-              email: data.user.email!,
-              name: data.user.user_metadata?.name || data.user.email!.split('@')[0],
-              avatar_url: data.user.user_metadata?.avatar_url,
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'id'
-            })
-
-          if (upsertError) {
-            // Log error but don't block login flow
-            // Log error for debugging in development only
-            if (process.env.NODE_ENV === 'development') {
-              console.warn('Could not upsert user record (non-blocking):', upsertError)
-            }
-            // Show a non-blocking toast notification
-            toast.warning('Profile sync in progress...', {
-              description: 'Your profile will be updated shortly.'
-            })
-          } else {
-            // Success - user record created/updated
-            toast.success('Successfully signed in!', {
-              description: 'Welcome back to your dashboard.'
-            })
-          }
-        } catch (error) {
-          // Catch any network or other errors - don't block login
-          // Log error for debugging in development only
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('User profile sync error (non-blocking):', error)
-          }
-          toast.info('Signed in successfully', {
-            description: 'Profile sync will complete in the background.'
-          })
-        }
-
         // Get redirect path from URL params or default to dashboard
         const redirectPath = searchParams.get('redirect') || '/dashboard'
 
-        toast.success('Successfully signed in!')
+        // Show immediate success message
+        toast.success('Successfully signed in!', {
+          description: 'Redirecting to your dashboard...'
+        })
 
-        // Use replace to prevent back button issues
+        // Immediate redirect - don't wait for user profile sync
         router.replace(redirectPath)
+
+        // Handle user profile sync in background (non-blocking)
+        setTimeout(async () => {
+          try {
+            // Use the safe upsert function instead of direct table access
+            const { error: upsertError } = await supabase.rpc('upsert_user_profile', {
+              user_name: data.user.user_metadata?.name || data.user.user_metadata?.full_name,
+              user_avatar_url: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture
+            })
+
+            if (upsertError) {
+              // Log error but don't show to user since they're already redirected
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('Background profile sync failed:', upsertError)
+              }
+            }
+          } catch (error) {
+            // Silent background error - user is already logged in and redirected
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('Background profile sync error:', error)
+            }
+          }
+        }, 100) // Small delay to ensure redirect happens first
       }
     } catch (err) {
       const errorMessage = 'An unexpected error occurred. Please try again.'

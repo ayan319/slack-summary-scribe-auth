@@ -149,19 +149,36 @@ function DashboardContent() {
         setError('Loading timed out. Please refresh the page.');
         setLoading(false);
       }
-    }, 15000); // 15 second timeout for overall loading
+    }, 10000); // 10 second timeout for overall loading
 
+    // Handle user loading state changes
     if (!userLoading) {
       if (user) {
+        // User is authenticated, fetch dashboard data
         fetchDashboardData();
       } else {
+        // No user, redirect to login
         setLoading(false);
         router.replace('/login');
       }
+    } else {
+      // Still loading user, but set a maximum wait time
+      const userLoadingTimeout = setTimeout(() => {
+        if (userLoading) {
+          // Force stop loading if user context is stuck
+          setLoading(false);
+          setError('Authentication check timed out. Please try logging in again.');
+        }
+      }, 8000); // 8 second timeout for user loading
+
+      return () => {
+        clearTimeout(loadingTimeout);
+        clearTimeout(userLoadingTimeout);
+      };
     }
 
     return () => clearTimeout(loadingTimeout);
-  }, [userLoading, user, fetchDashboardData, router, loading, error]);
+  }, [userLoading, user, fetchDashboardData, router]);
 
   const handleSignOut = async () => {
     try {
