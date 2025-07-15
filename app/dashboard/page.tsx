@@ -146,34 +146,45 @@ function DashboardContent() {
   }, [user, router]);
 
   useEffect(() => {
+    console.log('🔄 Dashboard effect - userLoading:', userLoading, 'user:', user?.email);
+
     // Add timeout to prevent infinite loading states
     const loadingTimeout = setTimeout(() => {
       if (loading && !error) {
+        console.warn('⏰ Dashboard loading timed out');
         setError('Loading timed out. Please refresh the page.');
         setLoading(false);
       }
-    }, 10000); // 10 second timeout for overall loading
+    }, 15000); // 15 second timeout for overall loading
 
     // Handle user loading state changes
     if (!userLoading) {
       if (user) {
+        console.log('✅ User authenticated, loading dashboard for:', user.email);
         // User is authenticated, ensure profile is synced and fetch dashboard data
-        upsertUserProfileFromAuth(user);
+        upsertUserProfileFromAuth(user).then(() => {
+          console.log('✅ Profile sync completed');
+        }).catch((profileErr) => {
+          console.warn('⚠️ Profile sync failed:', profileErr);
+        });
         fetchDashboardData();
       } else {
+        console.log('❌ No user found, redirecting to login');
         // No user, redirect to login
         setLoading(false);
         router.replace('/login');
       }
     } else {
+      console.log('⏳ Still loading user context...');
       // Still loading user, but set a maximum wait time
       const userLoadingTimeout = setTimeout(() => {
         if (userLoading) {
+          console.warn('⏰ User loading timed out');
           // Force stop loading if user context is stuck
           setLoading(false);
           setError('Authentication check timed out. Please try logging in again.');
         }
-      }, 8000); // 8 second timeout for user loading
+      }, 10000); // 10 second timeout for user loading
 
       return () => {
         clearTimeout(loadingTimeout);

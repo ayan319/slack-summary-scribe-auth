@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Github, Mail, CheckCircle } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { signUpWithEmail } from '@/lib/auth'
 import { toast } from 'sonner'
 
 export default function SignupPage() {
@@ -22,8 +23,13 @@ export default function SignupPage() {
   const router = useRouter()
 
   const validatePassword = (password: string) => {
+    // Supabase default password policy: minimum 6 characters
+    if (password.length < 6) {
+      return 'Password must be at least 6 characters long'
+    }
+    // Enhanced validation for better security
     if (password.length < 8) {
-      return 'Password must be at least 8 characters long'
+      return 'Password should be at least 8 characters for better security'
     }
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
       return 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
@@ -37,6 +43,18 @@ export default function SignupPage() {
     setError('')
 
     // Validation
+    if (!name.trim()) {
+      setError('Full name is required')
+      setLoading(false)
+      return
+    }
+
+    if (!email.trim()) {
+      setError('Email is required')
+      setLoading(false)
+      return
+    }
+
     if (password !== confirmPassword) {
       setError('Passwords do not match')
       setLoading(false)
@@ -51,34 +69,50 @@ export default function SignupPage() {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name,
-          },
-        },
-      })
+      console.log('🚀 Starting signup process for:', email)
 
-      if (error) {
-        setError(error.message)
+      // Use the enhanced signup function from auth.ts
+      const result = await signUpWithEmail(email.trim(), password, name.trim())
+
+      if (!result.success) {
+        console.error('❌ Signup error:', result.error)
+        setError(result.error || 'An unexpected error occurred')
         return
       }
 
-      if (data.user) {
-        toast.success('Welcome to SummaryAI!', {
+      console.log('✅ Signup successful:', result)
+
+      if (result.session && result.user) {
+        // User is immediately signed in (email confirmation disabled)
+        console.log('🎉 User signed in immediately')
+        toast.success('Welcome to Slack Summary Scribe!', {
           description: 'Your account has been created successfully.',
           icon: <CheckCircle className="h-4 w-4" />,
         })
-        router.push('/dashboard')
-      } else if (data.session === null && !error) {
+
+        // Small delay to ensure user context updates
+        setTimeout(() => {
+          router.push('/dashboard')
+        }, 1000)
+
+      } else if (result.user && result.needsVerification) {
+        // Email confirmation required
+        console.log('📧 Email confirmation required')
         toast.success('Check your email!', {
           description: 'Please verify your email address to complete signup.',
         })
+
+        setError('Please check your email and click the confirmation link to complete your signup.')
+
+      } else {
+        console.warn('⚠️ Unexpected signup response:', result)
+        setError('Signup completed but something went wrong. Please try signing in.')
       }
+
     } catch (err) {
-      setError('An unexpected error occurred')
+      console.error('💥 Signup exception:', err)
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -162,7 +196,7 @@ export default function SignupPage() {
                 aria-describedby="password-error"
               />
               <p className="text-xs text-muted-foreground">
-                Must be at least 8 characters with uppercase, lowercase, and number
+                Must be at least 6 characters (8+ recommended) with uppercase, lowercase, and number
               </p>
             </div>
             <div className="space-y-2">

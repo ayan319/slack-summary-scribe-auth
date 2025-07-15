@@ -39,28 +39,113 @@ export async function signInWithOAuth(provider: 'google' | 'github' | 'slack') {
  */
 export async function signUpWithEmail(email: string, password: string, name?: string) {
   try {
+    console.log('🚀 Starting signup process for:', email);
+
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: email.trim(),
       password,
       options: {
         data: {
-          name,
+          name: name?.trim(),
+          full_name: name?.trim(),
         },
       },
     });
 
     if (error) {
+      console.error('❌ Signup error:', error);
+
+      // Handle specific error cases with user-friendly messages
+      let errorMessage = error.message;
+
+      if (error.message.includes('User already registered')) {
+        errorMessage = 'An account with this email already exists. Please try signing in instead.';
+      } else if (error.message.includes('Password should be at least')) {
+        errorMessage = 'Password is too weak. Please choose a stronger password.';
+      } else if (error.message.includes('Invalid email')) {
+        errorMessage = 'Please enter a valid email address.';
+      } else if (error.message.includes('Signup is disabled')) {
+        errorMessage = 'Account creation is currently disabled. Please contact support.';
+      }
+
       return {
         success: false,
-        error: error.message,
+        error: errorMessage,
         user: null,
         session: null,
         needsVerification: false
       };
     }
 
+    console.log('✅ Signup successful:', data);
+
     // Check if email confirmation is required
     const needsVerification = !data.session && data.user && !data.user.email_confirmed_at;
+
+    // If user is immediately signed in, ensure profile is created
+    if (data.session && data.user) {
+      console.log('🎉 User signed in immediately, ensuring profile exists');
+
+      // Small delay to allow trigger to run
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Verify profile was created by the trigger
+      try {
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('id, name, email')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError || !profile) {
+          console.warn('⚠️ Profile not found, creating manually as fallback');
+
+          // Fallback: Create profile using client-side upsert
+          try {
+            console.log('🔧 Attempting client-side profile creation...');
+
+            // Try using the upsert function first
+            const { data: upsertResult, error: upsertError } = await supabase
+              .rpc('upsert_user_profile', {
+                user_name: name || data.user.user_metadata?.name || data.user.email!.split('@')[0],
+                user_avatar_url: data.user.user_metadata?.avatar_url || null
+              });
+
+            if (upsertError) {
+              console.warn('⚠️ Upsert function failed, trying direct insert:', upsertError.message);
+
+              // Direct insert as fallback
+              const { data: insertResult, error: insertError } = await supabase
+                .from('users')
+                .insert({
+                  id: data.user.id,
+                  email: data.user.email!,
+                  name: name || data.user.user_metadata?.name || data.user.email!.split('@')[0],
+                  avatar_url: data.user.user_metadata?.avatar_url || null,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+
+              if (insertError) {
+                console.error('❌ Direct insert failed:', insertError.message);
+              } else {
+                console.log('✅ Profile created via direct insert:', insertResult);
+              }
+            } else {
+              console.log('✅ Profile created via upsert function:', upsertResult);
+            }
+          } catch (fallbackErr) {
+            console.error('❌ All profile creation methods failed:', fallbackErr);
+          }
+        } else {
+          console.log('✅ Profile verified:', profile);
+        }
+      } catch (profileErr) {
+        console.warn('⚠️ Profile verification failed:', profileErr);
+      }
+    }
 
     return {
       success: true,
@@ -70,6 +155,7 @@ export async function signUpWithEmail(email: string, password: string, name?: st
       needsVerification
     };
   } catch (error) {
+    console.error('💥 Signup exception:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'An unexpected error occurred',

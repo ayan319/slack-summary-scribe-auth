@@ -52,17 +52,26 @@ export function UserProvider({ children }: UserProviderProps) {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state change:', event, session?.user?.email);
+
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        console.log('✅ User signed in, refreshing user data');
         await refreshUser();
       } else if (event === 'SIGNED_OUT') {
+        console.log('👋 User signed out');
         setUser(null);
         setIsLoading(false);
       } else if (event === 'INITIAL_SESSION') {
         if (session?.user) {
+          console.log('🔄 Initial session found, refreshing user data');
           await refreshUser();
         } else {
+          console.log('❌ No initial session found');
           setIsLoading(false);
         }
+      } else if (event === 'USER_UPDATED') {
+        console.log('👤 User updated, refreshing user data');
+        await refreshUser();
       }
     });
 
