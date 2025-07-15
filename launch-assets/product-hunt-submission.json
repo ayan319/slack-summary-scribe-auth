@@ -2,7 +2,7 @@
   "name": "Slack Summary Scribe",
   "tagline": "AI-powered Slack summaries that keep your team in sync",
   "description": "Never miss important Slack conversations again. Our AI creates intelligent summaries of your channels, helping remote teams stay connected and productive.",
-  "website": "http://localhost:3000",
+  "website": "https://slack-summary-scribe.vercel.app",
   "categories": [
     "Productivity",
     "Artificial Intelligence",
@@ -11,7 +11,7 @@
     "Communication"
   ],
   "pricing": "Freemium",
-  "launch_date": "2025-07-20",
+  "launch_date": "2025-07-22",
   "gallery_assets": [
     "dashboard-screenshot.png",
     "slack-integration.png",

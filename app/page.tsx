@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import {
-  MessageSquare,
   Zap,
   Check,
   ArrowRight,
@@ -10,6 +9,7 @@ import {
   FileText,
   Shield
 } from 'lucide-react';
+import { Logo } from '@/components/ui/logo';
 // import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
 
 export default function HomePage() {
@@ -19,10 +19,7 @@ export default function HomePage() {
       <header className="w-full bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <div className="container mx-auto px-4 py-6">
           <nav className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <MessageSquare className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-              <span className="text-xl md:text-2xl font-bold text-gray-900 dark:text-white">Slack Summary Scribe</span>
-            </div>
+            <Logo />
             <div className="hidden md:flex items-center space-x-4">
               <Link href="/pricing" className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                 Pricing
@@ -264,10 +261,7 @@ export default function HomePage() {
       <footer className="mt-auto border-t bg-white">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <MessageSquare className="h-6 w-6 text-blue-600" />
-              <span className="text-lg font-semibold text-gray-900">Slack Summary Scribe</span>
-            </div>
+            <Logo size="sm" className="mb-4 md:mb-0" />
             <div className="flex space-x-6 text-sm text-gray-600">
               <Link href="/terms" className="hover:text-blue-600 transition-colors">Terms</Link>
               <Link href="/privacy" className="hover:text-blue-600 transition-colors">Privacy</Link>

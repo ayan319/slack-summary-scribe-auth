@@ -18,10 +18,10 @@ The platform offers three pricing tiers: a free plan for small teams, a Pro plan
 
 ""We've seen 40% improvement in team communication efficiency during our beta testing." - Product Manager"
 
-Slack Summary Scribe is available immediately at http://localhost:3000 with a 14-day free trial for all paid plans.
+Slack Summary Scribe is available immediately at https://slack-summary-scribe.vercel.app with a 14-day free trial for all paid plans.
 
 About Slack Summary Scribe:
 Founded in 2024, Slack Summary Scribe is dedicated to solving communication challenges for remote and hybrid teams. The company's mission is to make workplace communication more efficient and inclusive through AI-powered tools.
 
-For more information, visit http://localhost:3000
+For more information, visit https://slack-summary-scribe.vercel.app
       
