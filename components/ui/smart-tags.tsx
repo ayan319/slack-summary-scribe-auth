@@ -85,7 +85,10 @@ export function SmartTags({
   const renderTagCategory = (category: keyof SummaryTags, categoryTags: string[]) => {
     if (!categoryTags || categoryTags.length === 0) return null;
 
-    const { icon: Icon, color, label } = TAG_CATEGORIES[category];
+    // Skip non-array properties like confidence_score
+    if (!(category in TAG_CATEGORIES)) return null;
+
+    const { icon: Icon, color, label } = TAG_CATEGORIES[category as keyof typeof TAG_CATEGORIES];
     const displayTags = showAllCategories ? categoryTags : categoryTags.slice(0, 3);
 
     return (

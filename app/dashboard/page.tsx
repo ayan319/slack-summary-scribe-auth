@@ -386,44 +386,17 @@ function DashboardContent() {
                   <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-semibold text-green-800">Summary Generated Successfully!</h4>
-                      {summaryResult.aiModel?.used && (
+                      {summaryResult.ai_model && (
                         <PremiumAIBadge
-                          model={summaryResult.aiModel.used}
-                          plan={data?.subscription?.plan || 'FREE'}
+                          model={summaryResult.ai_model}
+                          plan={(data?.subscription?.plan as 'FREE' | 'PRO' | 'ENTERPRISE') || 'FREE'}
                           size="sm"
                         />
                       )}
                     </div>
                     <p className="text-green-700 mb-3">{summaryResult.content}</p>
 
-                    {/* Advanced Features Status */}
-                    {summaryResult.advancedFeatures && (
-                      <div className="mt-3 p-3 bg-white border border-green-300 rounded-lg">
-                        <h5 className="text-sm font-medium text-green-800 mb-2">Advanced Features</h5>
-                        <div className="grid grid-cols-2 gap-2 text-xs">
-                          <div className="flex items-center space-x-1">
-                            <span className={summaryResult.advancedFeatures.smartTagging === 'enabled' ? 'text-green-600' : 'text-gray-500'}>
-                              {summaryResult.advancedFeatures.smartTagging === 'enabled' ? '✓' : '○'} Smart Tagging
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <span className={summaryResult.advancedFeatures.slackAutoPost === 'enabled' ? 'text-green-600' : 'text-gray-500'}>
-                              {summaryResult.advancedFeatures.slackAutoPost === 'enabled' ? '✓' : '○'} Slack Auto-Post
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <span className={summaryResult.advancedFeatures.crmIntegration === 'enabled' ? 'text-green-600' : 'text-gray-500'}>
-                              {summaryResult.advancedFeatures.crmIntegration === 'enabled' ? '✓' : '○'} CRM Integration
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <span className={summaryResult.advancedFeatures.premiumAI === 'enabled' ? 'text-green-600' : 'text-gray-500'}>
-                              {summaryResult.advancedFeatures.premiumAI === 'enabled' ? '✓' : '○'} Premium AI
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+
 
                     {summaryResult.skills_detected && summaryResult.skills_detected.length > 0 && (
                       <div data-testid="skills-detected" className="mt-2">
@@ -434,13 +407,13 @@ function DashboardContent() {
                   </div>
 
                   {/* Smart Tags Component */}
-                  {summaryResult.data?.id && (
+                  {summaryResult.id && (
                     <SmartTags
-                      summaryId={summaryResult.data.id}
+                      summaryId={summaryResult.id}
                       isPremium={data?.subscription?.plan !== 'FREE'}
                       onGenerateTags={() => {
                         // Generate tags for this summary
-                        fetch(`/api/summaries/${summaryResult.data.id}/tags`, { method: 'POST' })
+                        fetch(`/api/summaries/${summaryResult.id}/tags`, { method: 'POST' })
                           .then(() => {
                             toast.success('Smart tags generated!');
                             // Refresh to show tags

@@ -217,7 +217,7 @@ async function checkPremiumAccess(userId: string): Promise<boolean> {
       .eq('organizations.subscription_plan', 'PRO')
       .or('organizations.subscription_plan.eq.ENTERPRISE');
 
-    return userOrgs && userOrgs.length > 0;
+    return Boolean(userOrgs && userOrgs.length > 0);
   } catch (error) {
     console.error('Error checking premium access:', error);
     return false;

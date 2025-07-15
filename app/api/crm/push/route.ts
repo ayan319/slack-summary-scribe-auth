@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user's organization if not provided
-    let orgId = organization_id;
+    let orgId: string = organization_id || '';
     if (!orgId) {
       const { data: userOrg } = await supabase
         .from('user_organizations')
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         .limit(1)
         .single();
 
-      if (!userOrg) {
+      if (!userOrg?.organization_id) {
         return NextResponse.json(
           { error: 'No organization found for user' },
           { status: 400 }
@@ -153,7 +153,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get user's organization if not provided
-    let orgId = organizationId;
+    let orgId: string = organizationId || '';
     if (!orgId) {
       const { data: userOrg } = await supabase
         .from('user_organizations')
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
         .limit(1)
         .single();
 
-      if (!userOrg) {
+      if (!userOrg?.organization_id) {
         return NextResponse.json(
           { error: 'No organization found for user' },
           { status: 400 }
@@ -267,7 +267,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get user's organization if not provided
-    let orgId = organization_id;
+    let orgId: string = organization_id || '';
     if (!orgId) {
       const { data: userOrg } = await supabase
         .from('user_organizations')
@@ -276,7 +276,7 @@ export async function PUT(request: NextRequest) {
         .limit(1)
         .single();
 
-      if (!userOrg) {
+      if (!userOrg?.organization_id) {
         return NextResponse.json(
           { error: 'No organization found for user' },
           { status: 400 }

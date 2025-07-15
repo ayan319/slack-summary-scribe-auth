@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     });
 
     const body = await request.json();
-    const { transcriptText, userId, teamId, context, preferredModel } = body;
+    const { transcriptText, userId, teamId, context, preferredModel, organizationId } = body;
 
     // Validate required fields
     if (!transcriptText) {
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
     // Demo user data
     const demoUserId = userId || 'demo-user-123';
     const demoTeamId = teamId || 'demo-team-123';
+    const demoOrganizationId = organizationId || 'demo-org-123';
 
     // Add summarization breadcrumb
     SentryTracker.addSummarizationBreadcrumb('manual', 'started', undefined, {
@@ -117,8 +118,8 @@ export async function POST(request: NextRequest) {
           const { data: summary, error: summaryError } = await supabase
             .from('summaries')
             .insert({
-              user_id: userId,
-              organization_id: organizationId,
+              user_id: demoUserId,
+              organization_id: demoOrganizationId,
               title: `Summary - ${new Date().toLocaleDateString()}`,
               content: summaryResponse.text,
               source_type: 'manual',

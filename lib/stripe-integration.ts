@@ -209,7 +209,7 @@ function verifyStripeSignature(payload: any, signature: string): boolean {
   try {
     // In a real implementation, you would use Stripe's webhook signature verification
     // For now, we'll do a basic check
-    return signature && signature.length > 0;
+    return Boolean(signature && signature.length > 0);
   } catch (error) {
     console.error('Error verifying Stripe signature:', error);
     return false;
