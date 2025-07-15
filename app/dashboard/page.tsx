@@ -252,16 +252,92 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="space-y-6">
-            <Skeleton className="h-8 w-64" />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Skeleton className="h-32" />
-              <Skeleton className="h-32" />
-              <Skeleton className="h-32" />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        {/* Enhanced Loading Header */}
+        <div className="bg-white/80 backdrop-blur-sm shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <Skeleton className="h-8 w-32" />
+                <Skeleton className="h-6 w-16" />
+              </div>
+              <div className="flex items-center space-x-4">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="hidden md:block space-y-1">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
             </div>
-            <Skeleton className="h-64" />
+          </div>
+        </div>
+
+        {/* Enhanced Loading Content */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="space-y-8">
+            {/* Welcome Section Skeleton */}
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-80" />
+              <Skeleton className="h-6 w-96" />
+            </div>
+
+            {/* Stats Cards Skeleton */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="bg-white/80 backdrop-blur-sm">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-20" />
+                        <Skeleton className="h-8 w-16" />
+                      </div>
+                      <Skeleton className="h-8 w-8" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Main Content Skeleton */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card className="bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <Skeleton className="h-6 w-40" />
+                  <Skeleton className="h-4 w-60" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Skeleton className="h-32" />
+                  <Skeleton className="h-10 w-32" />
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white/80 backdrop-blur-sm">
+                <CardHeader>
+                  <Skeleton className="h-6 w-32" />
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center space-x-4 p-4 border rounded-lg">
+                      <Skeleton className="h-10 w-10 rounded" />
+                      <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-3 w-3/4" />
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Loading Indicator */}
+        <div className="fixed bottom-8 right-8">
+          <div className="bg-white/90 backdrop-blur-sm rounded-full p-4 shadow-lg">
+            <div className="flex items-center space-x-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-600 border-t-transparent"></div>
+              <span className="text-sm font-medium text-gray-700">Loading your dashboard...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -270,11 +346,45 @@ function DashboardContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Alert className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center px-4">
+        <Card className="max-w-md w-full bg-white/90 backdrop-blur-sm shadow-xl">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+            </div>
+            <CardTitle className="text-xl font-semibold text-gray-900">
+              Something went wrong
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              We encountered an error while loading your dashboard
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert variant="destructive" className="border-red-200 bg-red-50">
+              <AlertDescription className="text-red-800 text-sm">
+                {error}
+              </AlertDescription>
+            </Alert>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                onClick={() => window.location.reload()}
+                className="flex-1"
+                variant="default"
+              >
+                <Clock className="mr-2 h-4 w-4" />
+                Try Again
+              </Button>
+              <Button
+                onClick={() => router.push('/login')}
+                variant="outline"
+                className="flex-1"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }

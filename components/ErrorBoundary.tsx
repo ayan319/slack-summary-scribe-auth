@@ -80,31 +80,94 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 // Default error fallback component
 function DefaultErrorFallback({ error, retry }: { error: Error; retry: () => void }) {
   const isDevelopment = process.env.NODE_ENV === 'development';
+  const errorId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  const copyErrorDetails = () => {
+    const errorDetails = {
+      errorId,
+      message: error.message,
+      stack: error.stack,
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+    };
+
+    navigator.clipboard.writeText(JSON.stringify(errorDetails, null, 2))
+      .then(() => {
+        console.log('Error details copied to clipboard');
+      })
+      .catch(() => {
+        console.error('Failed to copy error details');
+      });
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+      <Card className="w-full max-w-lg bg-white/90 backdrop-blur-sm shadow-xl">
         <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
-            <AlertTriangle className="w-6 h-6 text-red-600" />
+          <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+            <AlertTriangle className="w-8 h-8 text-red-600" />
           </div>
-          <CardTitle className="text-xl">Something went wrong</CardTitle>
-          <CardDescription>
-            We encountered an unexpected error. Please try again or contact support if the problem persists.
+          <CardTitle className="text-xl font-semibold text-gray-900">
+            Oops! Something went wrong
+          </CardTitle>
+          <CardDescription className="text-gray-600">
+            We encountered an unexpected error. Don't worry, our team has been notified and we're working on a fix.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Error ID for support */}
+          <Alert className="border-blue-200 bg-blue-50">
+            <AlertTriangle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              <div className="flex items-center justify-between">
+                <span className="text-sm">
+                  Error ID: <code className="font-mono text-xs bg-blue-100 px-1 rounded">{errorId}</code>
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={copyErrorDetails}
+                  className="h-6 px-2 text-blue-600 hover:text-blue-700"
+                >
+                  Copy Details
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+
+          {/* Error message for development */}
           {isDevelopment && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="text-xs font-mono">
-                {error.message}
+            <Alert variant="destructive" className="border-red-200 bg-red-50">
+              <AlertDescription className="text-red-800">
+                <details className="text-sm">
+                  <summary className="cursor-pointer font-medium mb-2">
+                    Technical Details (Development)
+                  </summary>
+                  <div className="font-mono text-xs bg-red-100 p-2 rounded overflow-auto max-h-32">
+                    <div className="mb-2">
+                      <strong>Error:</strong> {error.message}
+                    </div>
+                    {error.stack && (
+                      <div>
+                        <strong>Stack:</strong>
+                        <pre className="whitespace-pre-wrap text-xs mt-1">
+                          {error.stack}
+                        </pre>
+                      </div>
+                    )}
+                  </div>
+                </details>
               </AlertDescription>
             </Alert>
           )}
-          
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Button onClick={retry} className="flex-1">
+
+          {/* Action buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              onClick={retry}
+              className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            >
               <RefreshCw className="w-4 h-4 mr-2" />
               Try Again
             </Button>
@@ -121,16 +184,13 @@ function DefaultErrorFallback({ error, retry }: { error: Error; retry: () => voi
               Go Home
             </Button>
           </div>
-          
-          <div className="text-center">
-            <Button 
-              variant="link" 
-              size="sm"
-              onClick={() => window.location.href = '/contact'}
-              className="text-xs"
-            >
-              Contact Support
-            </Button>
+
+          {/* Help text */}
+          <div className="text-center text-sm text-gray-500">
+            <p>If this problem persists, please contact our support team</p>
+            <p className="text-xs mt-1">
+              Include the Error ID above for faster assistance
+            </p>
           </div>
         </CardContent>
       </Card>
