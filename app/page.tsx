@@ -7,7 +7,13 @@ import {
   ArrowRight,
   Brain,
   FileText,
-  Shield
+  Shield,
+  MessageSquare,
+  Crown,
+  Building2,
+  Tags,
+  CreditCard,
+  Sparkles
 } from 'lucide-react';
 import { Logo } from '@/components/ui/logo';
 // import { SimpleThemeToggle } from '@/components/ui/theme-toggle';
@@ -48,17 +54,17 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="w-full bg-gray-50 dark:bg-gray-800">
         <div className="container mx-auto px-4 py-20 text-center">
-          <div className="inline-flex items-center px-3 py-1 mb-4 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 rounded-full">
-            <Zap className="w-3 h-3 mr-1" />
-            AI-Powered Summaries
+          <div className="inline-flex items-center px-3 py-1 mb-4 text-sm bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 rounded-full">
+            <Crown className="w-3 h-3 mr-1" />
+            Premium AI-Powered Summaries
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
-            Transform Your Slack Conversations Into
-            <span className="text-blue-600 dark:text-blue-400"> Actionable Insights</span>
+            Smart Slack Summaries with
+            <span className="text-purple-600 dark:text-purple-400"> GPT-4o-mini</span>
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Stop drowning in endless Slack messages. Our AI analyzes your team conversations
-            and creates concise summaries highlighting key decisions, action items, and important discussions.
+            AI-powered premium summarization with smart tagging, CRM auto-sync, and global payments via Stripe.
+            Transform your Slack conversations into actionable insights with advanced features.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/dashboard" className="inline-flex items-center px-8 py-3 text-lg bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors">
@@ -88,27 +94,35 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-md transition-shadow">
-              <Brain className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2 text-gray-900">AI-Powered Analysis</h3>
+            <div className="text-center p-6 bg-purple-50 rounded-lg hover:shadow-md transition-shadow border border-purple-200">
+              <Crown className="h-12 w-12 text-purple-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2 text-gray-900">Premium AI Models</h3>
               <p className="text-gray-600">
-                Advanced AI understands context and extracts key insights from your conversations
+                GPT-4o-mini for Pro users with intelligent fallback to DeepSeek for reliability
               </p>
             </div>
 
-            <div className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-md transition-shadow">
-              <MessageSquare className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2 text-gray-900">Seamless Integration</h3>
+            <div className="text-center p-6 bg-blue-50 rounded-lg hover:shadow-md transition-shadow border border-blue-200">
+              <Tags className="h-12 w-12 text-blue-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2 text-gray-900">Smart Tagging</h3>
               <p className="text-gray-600">
-                Connect your Slack workspace in seconds with our secure OAuth integration
+                AI extracts skills, technologies, action items, and sentiments automatically
               </p>
             </div>
 
-            <div className="text-center p-6 bg-gray-50 rounded-lg hover:shadow-md transition-shadow">
-              <FileText className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold mb-2 text-gray-900">Multiple Export Options</h3>
+            <div className="text-center p-6 bg-green-50 rounded-lg hover:shadow-md transition-shadow border border-green-200">
+              <MessageSquare className="h-12 w-12 text-green-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2 text-gray-900">Slack Auto-Post</h3>
               <p className="text-gray-600">
-                Export summaries to PDF, Notion, or your favorite productivity tools
+                Automatically post summaries back to Slack channels or DMs for seamless workflow
+              </p>
+            </div>
+
+            <div className="text-center p-6 bg-orange-50 rounded-lg hover:shadow-md transition-shadow border border-orange-200">
+              <Building2 className="h-12 w-12 text-orange-600 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2 text-gray-900">CRM Auto-Sync</h3>
+              <p className="text-gray-600">
+                Push summaries to HubSpot, Salesforce, and Notion automatically
               </p>
             </div>
 
@@ -118,6 +132,34 @@ export default function HomePage() {
               <p className="text-gray-600">
                 Bank-grade security ensures your sensitive conversations stay private
               </p>
+            </div>
+          </div>
+
+          {/* Advanced Features Section */}
+          <div className="mt-20 text-center">
+            <h3 className="text-2xl font-bold text-gray-900 mb-8">Advanced Features for Premium Users</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                <Sparkles className="h-10 w-10 text-purple-600 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold mb-2 text-gray-900">Premium AI Models</h4>
+                <p className="text-gray-600 text-sm">
+                  Access to GPT-4o-mini and GPT-4o for superior summarization quality
+                </p>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg border border-green-200">
+                <CreditCard className="h-10 w-10 text-green-600 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold mb-2 text-gray-900">Global Payments</h4>
+                <p className="text-gray-600 text-sm">
+                  Stripe integration with Apple Pay, Google Pay, and worldwide payment support
+                </p>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg border border-orange-200">
+                <Shield className="h-10 w-10 text-orange-600 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold mb-2 text-gray-900">Enterprise Security</h4>
+                <p className="text-gray-600 text-sm">
+                  Advanced encryption, audit logs, and compliance features for enterprise teams
+                </p>
+              </div>
             </div>
           </div>
         </div>

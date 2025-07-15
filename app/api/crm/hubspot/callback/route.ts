@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { storeCRMToken } from '@/lib/crm-integrations';
+import { exchangeCRMOAuthCode, storeCRMIntegration } from '@/lib/crm-integrations';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { SentryTracker } from '@/lib/sentry.client';
 
+/**
+ * GET /api/crm/hubspot/callback
+ * Handle HubSpot OAuth callback
+ */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -8,21 +14,31 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state');
     const error = searchParams.get('error');
 
+    // Handle OAuth error
     if (error) {
       console.error('HubSpot OAuth error:', error);
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?crm_error=${encodeURIComponent(error)}`
+        `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?crm_error=oauth_denied`
       );
     }
 
     if (!code || !state) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?crm_error=missing_code_or_state`
+        `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?crm_error=missing_params`
       );
     }
 
     // Parse state to get user and organization info
-    const stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+    let stateData;
+    try {
+      stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+    } catch (parseError) {
+      console.error('Error parsing state:', parseError);
+      return NextResponse.redirect(
+        `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?crm_error=invalid_state`
+      );
+    }
+
     const { userId, organizationId } = stateData;
 
     if (!userId || !organizationId) {
@@ -31,60 +47,49 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Exchange code for access token
-    const tokenResponse = await fetch('https://api.hubapi.com/oauth/v1/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: process.env.HUBSPOT_CLIENT_ID!,
-        client_secret: process.env.HUBSPOT_CLIENT_SECRET!,
-        redirect_uri: `${process.env.NEXT_PUBLIC_SITE_URL}/api/crm/hubspot/callback`,
-        code,
-      }),
-    });
+    // Verify user session
+    const supabase = await createSupabaseServerClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-    if (!tokenResponse.ok) {
-      const errorText = await tokenResponse.text();
-      console.error('HubSpot token exchange failed:', errorText);
+    if (authError || !user || user.id !== userId) {
       return NextResponse.redirect(
-        `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?crm_error=token_exchange_failed`
+        `${process.env.NEXT_PUBLIC_SITE_URL}/login?error=authentication_required`
       );
     }
 
-    const tokenData = await tokenResponse.json();
-    const { access_token, refresh_token, expires_in } = tokenData;
+    // Exchange code for access token
+    const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL}/api/crm/hubspot/callback`;
+    const tokenData = await exchangeCRMOAuthCode('hubspot', code, redirectUri);
 
-    // Calculate expiration date
-    const expiresAt = new Date(Date.now() + expires_in * 1000);
+    if (!tokenData.access_token) {
+      throw new Error('No access token received from HubSpot');
+    }
 
-    // Store encrypted token in database
-    await storeCRMToken(
+    // Store the integration
+    const integration = await storeCRMIntegration(
       userId,
       organizationId,
       'hubspot',
-      access_token,
-      refresh_token,
-      expiresAt
+      tokenData
     );
 
-    console.log('✅ HubSpot integration connected successfully:', {
+    console.log('✅ HubSpot integration stored successfully:', {
+      integrationId: integration.id,
       userId,
-      organizationId,
-      expiresAt: expiresAt.toISOString()
+      organizationId
     });
 
-    // Redirect back to settings with success message
+    // Redirect to dashboard with success message
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?crm_success=hubspot_connected`
     );
 
   } catch (error) {
-    console.error('HubSpot OAuth callback error:', error);
+    console.error('HubSpot callback error:', error);
+    SentryTracker.captureException(error instanceof Error ? error : new Error(String(error)));
+
     return NextResponse.redirect(
-      `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?crm_error=callback_failed`
+      `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard/settings?crm_error=connection_failed`
     );
   }
 }

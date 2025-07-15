@@ -5,20 +5,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Settings, 
-  Brain, 
-  Building2, 
-  Crown, 
-  User, 
+import {
+  Settings,
+  Brain,
+  Building2,
+  Crown,
+  User,
   Bell,
   Shield,
   Zap,
-  TrendingUp
+  TrendingUp,
+  MessageSquare
 } from 'lucide-react';
 import { CRMConnections } from '@/components/ui/crm-connections';
 import { AIModelSelector } from '@/components/ui/ai-model-selector';
 import { OnboardingChecklist } from '@/components/ui/onboarding-checklist';
+import { SlackAutoPostSettings } from '@/components/ui/slack-auto-post-settings';
 
 export default function SettingsPage() {
   const [userPlan, setUserPlan] = useState<'FREE' | 'PRO' | 'ENTERPRISE'>('FREE');
@@ -96,10 +98,14 @@ export default function SettingsPage() {
 
       {/* Settings Tabs */}
       <Tabs defaultValue="ai-models" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="ai-models" className="flex items-center space-x-2">
             <Brain className="h-4 w-4" />
             <span>AI Models</span>
+          </TabsTrigger>
+          <TabsTrigger value="slack" className="flex items-center space-x-2">
+            <MessageSquare className="h-4 w-4" />
+            <span>Slack</span>
           </TabsTrigger>
           <TabsTrigger value="integrations" className="flex items-center space-x-2">
             <Building2 className="h-4 w-4" />
@@ -156,6 +162,16 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Slack Tab */}
+        <TabsContent value="slack" className="space-y-6">
+          <SlackAutoPostSettings
+            isPremium={userPlan !== 'FREE'}
+            onSettingsChange={(settings) => {
+              console.log('Slack settings changed:', settings);
+            }}
+          />
         </TabsContent>
 
         {/* CRM Integrations Tab */}

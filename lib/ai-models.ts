@@ -24,26 +24,37 @@ export const AI_MODELS: Record<string, AIModel> = {
     features: ['Basic summarization', 'Fast processing', 'Free tier'],
     description: 'Fast and efficient AI model for basic summarization tasks'
   },
+  'gpt-4o-mini': {
+    id: 'gpt-4o-mini',
+    name: 'GPT-4o Mini',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    maxTokens: 8000,
+    costPer1kTokens: 0.15,
+    requiredPlan: 'PRO',
+    features: ['Premium summarization', 'Smart tagging', 'Enhanced analysis', 'Better context'],
+    description: 'OpenAI\'s efficient model optimized for high-quality summarization and analysis'
+  },
   'gpt-4o': {
     id: 'gpt-4o',
     name: 'GPT-4o',
-    provider: 'openai',
-    model: 'gpt-4o',
+    provider: 'openrouter',
+    model: 'openai/gpt-4o',
     maxTokens: 8000,
-    costPer1kTokens: 0.03,
-    requiredPlan: 'PRO',
-    features: ['Advanced reasoning', 'Better context understanding', 'Premium quality'],
+    costPer1kTokens: 0.30,
+    requiredPlan: 'ENTERPRISE',
+    features: ['Advanced reasoning', 'Superior context understanding', 'Enterprise quality'],
     description: 'OpenAI\'s most capable model with superior reasoning and analysis'
   },
   'claude-3-5-sonnet': {
     id: 'claude-3-5-sonnet',
     name: 'Claude 3.5 Sonnet',
-    provider: 'anthropic',
-    model: 'claude-3-5-sonnet-20241022',
+    provider: 'openrouter',
+    model: 'anthropic/claude-3.5-sonnet',
     maxTokens: 8000,
-    costPer1kTokens: 0.03,
-    requiredPlan: 'PRO',
-    features: ['Excellent writing quality', 'Nuanced analysis', 'Premium insights'],
+    costPer1kTokens: 0.30,
+    requiredPlan: 'ENTERPRISE',
+    features: ['Excellent writing quality', 'Nuanced analysis', 'Enterprise insights'],
     description: 'Anthropic\'s most advanced model with exceptional writing and analysis capabilities'
   },
   'gpt-4o-enterprise': {
@@ -79,12 +90,38 @@ export function getDefaultModel(userPlan: SubscriptionPlan): string {
     case 'FREE':
       return 'deepseek-r1';
     case 'PRO':
-      return 'gpt-4o';
+      return 'gpt-4o-mini';
     case 'ENTERPRISE':
-      return 'gpt-4o-enterprise';
+      return 'gpt-4o';
     default:
       return 'deepseek-r1';
   }
+}
+
+/**
+ * Get premium model for user's plan with fallback
+ */
+export function getPremiumModel(userPlan: SubscriptionPlan, preferredModel?: string): string {
+  // If user specified a preferred model and can use it, return that
+  if (preferredModel && canUseModel(userPlan, preferredModel)) {
+    return preferredModel;
+  }
+
+  // Otherwise return the default premium model for their plan
+  return getDefaultModel(userPlan);
+}
+
+/**
+ * Get fallback model if primary model fails
+ */
+export function getFallbackModel(userPlan: SubscriptionPlan, failedModel: string): string {
+  // If premium model fails, fall back to free model
+  if (failedModel !== 'deepseek-r1') {
+    return 'deepseek-r1';
+  }
+
+  // If free model fails, no fallback available
+  throw new Error('No fallback model available');
 }
 
 export function canUseModel(userPlan: SubscriptionPlan, modelId: string): boolean {
@@ -132,10 +169,10 @@ export async function generateAISummary(
   }
 
   const startTime = Date.now();
-  
+
   try {
     let response: any;
-    
+
     switch (model.provider) {
       case 'openrouter':
         response = await generateOpenRouterSummary(text, model, context);
@@ -169,6 +206,44 @@ export async function generateAISummary(
   } catch (error) {
     console.error(`AI generation failed for model ${modelId}:`, error);
     throw error;
+  }
+}
+
+/**
+ * Generate AI summary with premium model and fallback
+ */
+export async function generatePremiumAISummary(
+  text: string,
+  userPlan: SubscriptionPlan,
+  preferredModel?: string,
+  context?: string
+): Promise<AIResponse> {
+  const primaryModel = getPremiumModel(userPlan, preferredModel);
+
+  try {
+    // Try primary model first
+    return await generateAISummary(text, primaryModel, context);
+  } catch (primaryError) {
+    console.warn(`Primary model ${primaryModel} failed, trying fallback:`, primaryError);
+
+    try {
+      // Try fallback model
+      const fallbackModel = getFallbackModel(userPlan, primaryModel);
+      const result = await generateAISummary(text, fallbackModel, context);
+
+      // Add note about fallback in the response
+      return {
+        ...result,
+        model: `${fallbackModel} (fallback from ${primaryModel})`
+      };
+    } catch (fallbackError) {
+      console.error('Both primary and fallback models failed:', {
+        primaryModel,
+        primaryError,
+        fallbackError
+      });
+      throw new Error(`AI summarization failed: ${fallbackError instanceof Error ? fallbackError.message : 'Unknown error'}`);
+    }
   }
 }
 

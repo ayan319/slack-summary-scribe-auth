@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateDeepSeekSummary } from '@/lib/slack';
 import { SentryTracker } from '@/lib/sentry.client';
-import { generateAISummary, getDefaultModel, canUseModel, AI_MODELS } from '@/lib/ai-models';
+import { generatePremiumAISummary, getDefaultModel, canUseModel, AI_MODELS } from '@/lib/ai-models';
 import { getUserSubscription, getUserPlan } from '@/lib/subscription';
-import { supabase } from '@/lib/supabase';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { extractSummaryTags } from '@/lib/ai-tagging';
+import { autoPostSummaryToSlack } from '@/lib/slack-auto-post';
+import { pushSummaryToCRM, shouldAutoPushToCRM, getUserCRMConnections } from '@/lib/crm-integrations';
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,8 +90,13 @@ export async function POST(request: NextRequest) {
           processingTime: Date.now() - startTime
         };
       } else {
-        // Use new multi-tier AI system
-        summaryResponse = await generateAISummary(transcriptText, selectedModel, context?.source);
+        // Use new premium AI system with fallback
+        summaryResponse = await generatePremiumAISummary(
+          transcriptText,
+          userPlan as any,
+          selectedModel,
+          context?.source
+        );
       }
 
       const processingTime = Date.now() - startTime;
@@ -98,14 +106,97 @@ export async function POST(request: NextRequest) {
         textLength: transcriptText.length,
       });
 
+      // Store summary in database (production mode)
+      let summaryId = 'demo-summary-' + Date.now();
+
+      if (userId && userId !== 'demo-user-123') {
+        try {
+          const supabase = await createSupabaseServerClient();
+
+          // Store the summary
+          const { data: summary, error: summaryError } = await supabase
+            .from('summaries')
+            .insert({
+              user_id: userId,
+              organization_id: organizationId,
+              title: `Summary - ${new Date().toLocaleDateString()}`,
+              content: summaryResponse.text,
+              source_type: 'manual',
+              source_data: {
+                model: summaryResponse.model,
+                tokens: summaryResponse.tokens,
+                cost: summaryResponse.cost,
+                processing_time: processingTime
+              }
+            })
+            .select()
+            .single();
+
+          if (summaryError) {
+            console.error('Error storing summary:', summaryError);
+          } else {
+            summaryId = summary.id;
+
+            // Advanced features for premium users
+            if (userPlan !== 'FREE') {
+              // 1. Smart Tagging (async)
+              extractSummaryTags(summaryResponse.text, summaryId, userId)
+                .then(taggingResult => {
+                  if (taggingResult.success) {
+                    console.log('✅ Smart tags extracted:', taggingResult.tags);
+                  } else {
+                    console.warn('⚠️ Smart tagging failed:', taggingResult.error);
+                  }
+                })
+                .catch(error => console.error('Smart tagging error:', error));
+
+              // 2. Auto-post to Slack (async)
+              autoPostSummaryToSlack(summaryId, userId, organizationId)
+                .then(postResult => {
+                  if (postResult.success) {
+                    console.log('✅ Auto-posted to Slack:', postResult.message_ts);
+                  } else {
+                    console.warn('⚠️ Slack auto-post failed:', postResult.error);
+                  }
+                })
+                .catch(error => console.error('Slack auto-post error:', error));
+
+              // 3. Auto-push to CRM (async)
+              shouldAutoPushToCRM(userId, organizationId)
+                .then(async (shouldPush) => {
+                  if (shouldPush) {
+                    const connections = await getUserCRMConnections(userId, organizationId);
+                    for (const connection of connections) {
+                      pushSummaryToCRM(summaryId, userId, organizationId, connection.crm_type)
+                        .then(pushResult => {
+                          if (pushResult.success) {
+                            console.log(`✅ Pushed to ${connection.crm_type}:`, pushResult.crm_record_id);
+                          } else {
+                            console.warn(`⚠️ ${connection.crm_type} push failed:`, pushResult.error);
+                          }
+                        })
+                        .catch(error => console.error(`${connection.crm_type} push error:`, error));
+                    }
+                  }
+                })
+                .catch(error => console.error('CRM auto-push check error:', error));
+            }
+          }
+        } catch (error) {
+          console.error('Error in advanced features:', error);
+        }
+      }
+
       // Demo mode - simulate database save
-      console.log('💾 Summary saved (demo mode):', {
+      console.log('💾 Summary saved:', {
+        summaryId,
         userId: demoUserId,
         teamId: demoTeamId,
         title: `Summary - ${new Date().toLocaleDateString()}`,
         summaryLength: summaryResponse.text.length,
         aiModel: summaryResponse.model,
-        cost: summaryResponse.cost
+        cost: summaryResponse.cost,
+        advancedFeatures: userPlan !== 'FREE' ? ['smart_tagging', 'auto_post', 'crm_push'] : []
       });
 
       const demoSummary = {
@@ -151,7 +242,10 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({
         success: true,
-        data: demoSummary,
+        data: {
+          ...demoSummary,
+          id: summaryId // Use actual summary ID if created
+        },
         aiModel: {
           used: summaryResponse.model,
           available: userPlan,
@@ -162,7 +256,16 @@ export async function POST(request: NextRequest) {
           cost: summaryResponse.cost,
           processingTime: summaryResponse.processingTime
         },
-        qualityScores: summaryResponse.qualityScores
+        qualityScores: summaryResponse.qualityScores,
+        advancedFeatures: {
+          smartTagging: userPlan !== 'FREE' ? 'enabled' : 'upgrade_required',
+          slackAutoPost: userPlan !== 'FREE' ? 'enabled' : 'upgrade_required',
+          crmIntegration: userPlan !== 'FREE' ? 'enabled' : 'upgrade_required',
+          premiumAI: userPlan !== 'FREE' ? 'enabled' : 'upgrade_required'
+        },
+        message: userPlan === 'FREE'
+          ? 'Summary created with basic features. Upgrade to Pro for smart tagging, auto-posting, and CRM integration.'
+          : 'Summary created with premium features enabled.'
       });
 
     } catch (aiError) {
