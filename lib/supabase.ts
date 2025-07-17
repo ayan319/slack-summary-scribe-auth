@@ -1,4 +1,4 @@
-import { createPagesBrowserClient, createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { createBrowserClient, createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 
 // Environment variable validation
@@ -309,8 +309,8 @@ export interface Database {
   }
 }
 
-// Singleton pattern for browser client
-let supabaseClient: ReturnType<typeof createPagesBrowserClient> | null = null
+// Singleton pattern for browser client with enhanced session handling
+let supabaseClient: ReturnType<typeof createBrowserClient> | null = null
 
 export function getSupabaseClient() {
   if (typeof window === 'undefined') {
@@ -320,7 +320,12 @@ export function getSupabaseClient() {
 
   // Client-side: use singleton to prevent multiple instances
   if (!supabaseClient) {
-    supabaseClient = createPagesBrowserClient()
+    supabaseClient = createBrowserClient(supabaseUrl, supabaseAnonKey);
+
+    // Enhanced logging for development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔧 Supabase client initialized for development');
+    }
   }
 
   return supabaseClient
@@ -339,5 +344,5 @@ export const supabaseAdmin = supabaseServiceKey
     })
   : null
 
-// Export the route handler client creator
-export { createRouteHandlerClient }
+// Export the server client creator for API routes
+export { createServerClient }

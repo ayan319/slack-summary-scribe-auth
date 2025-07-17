@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient, supabaseAdmin } from '@/lib/supabase';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
+import { supabaseAdmin } from '@/lib/supabase';
 import { sendEmail } from '@/lib/resend';
 
 const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || 'support@summaryai.com';

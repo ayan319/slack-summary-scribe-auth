@@ -120,13 +120,27 @@ function validateEnvironment() {
   // Security checks
   console.log(chalk.yellow.bold('\nSecurity Validation:'));
   
-  // Check HTTPS URLs
+  // Check HTTPS URLs (only in production)
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (siteUrl && !siteUrl.startsWith('https://')) {
-    console.log(chalk.red('❌ NEXT_PUBLIC_SITE_URL must use HTTPS in production'));
-    hasErrors = true;
-  } else if (siteUrl) {
-    console.log(chalk.green('✅ Site URL uses HTTPS'));
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
+  if (siteUrl) {
+    if (isDevelopment) {
+      // Development: Allow HTTP for localhost
+      if (siteUrl.startsWith('http://localhost') || siteUrl.startsWith('https://localhost')) {
+        console.log(chalk.green('✅ Site URL configured for development'));
+      } else {
+        console.log(chalk.yellow('⚠️ Development site URL should use localhost'));
+      }
+    } else {
+      // Production: Require HTTPS
+      if (!siteUrl.startsWith('https://')) {
+        console.log(chalk.red('❌ NEXT_PUBLIC_SITE_URL must use HTTPS in production'));
+        hasErrors = true;
+      } else {
+        console.log(chalk.green('✅ Site URL uses HTTPS'));
+      }
+    }
   }
 
   // Check Supabase URL

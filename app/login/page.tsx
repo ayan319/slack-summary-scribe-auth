@@ -27,7 +27,8 @@ export default function LoginPage() {
   useEffect(() => {
     if (!userLoading && user) {
       const redirectPath = searchParams.get('redirect') || '/dashboard'
-      router.replace(redirectPath)
+      // Use router.push for better UX and faster navigation
+      router.push(redirectPath)
     }
   }, [user, userLoading, router, searchParams])
 
@@ -62,18 +63,14 @@ export default function LoginPage() {
         // Get redirect path from URL params or default to dashboard
         const redirectPath = searchParams.get('redirect') || '/dashboard'
 
-        // Show immediate success message
-        toast.success('Successfully signed in!', {
-          description: 'Redirecting to your dashboard...'
-        })
+        // Show success message
+        toast.success('Welcome back!')
 
-        // Immediate redirect - don't wait for user profile sync
-        router.replace(redirectPath)
+        // Immediate redirect for best UX
+        router.push(redirectPath)
 
         // Handle user profile sync in background (non-blocking)
-        setTimeout(() => {
-          upsertUserProfileFromAuth(data.user);
-        }, 100) // Small delay to ensure redirect happens first
+        upsertUserProfileFromAuth(data.user).catch(console.error);
       }
     } catch (err) {
       const errorMessage = 'An unexpected error occurred. Please try again.'

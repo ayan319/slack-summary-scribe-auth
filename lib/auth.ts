@@ -100,11 +100,30 @@ export async function signUpWithEmail(email: string, password: string, name?: st
         if (profileError || !profile) {
           console.warn('⚠️ Profile not found, creating manually as fallback');
 
-          // Fallback: Create profile using client-side upsert
+          // Enhanced fallback: Create profile using client-side upsert with retry logic
           try {
             console.log('🔧 Attempting client-side profile creation...');
 
-            // Try using the upsert function first
+            // Wait a moment for the trigger to potentially complete
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            // Check once more if profile was created by trigger
+            const { data: retryProfile, error: retryError } = await supabase
+              .from('users')
+              .select('id, name, email, avatar_url')
+              .eq('id', data.user.id)
+              .single();
+
+            if (retryProfile && !retryError) {
+              console.log('✅ Profile found on retry - trigger worked');
+              return {
+                user: data.user,
+                session: data.session,
+                profile: retryProfile
+              };
+            }
+
+            // Try using the upsert function as fallback
             const { data: upsertResult, error: upsertError } = await supabase
               .rpc('upsert_user_profile', {
                 user_name: name || data.user.user_metadata?.name || data.user.email!.split('@')[0],
@@ -258,23 +277,127 @@ export async function signOut() {
 }
 
 /**
- * Get current user session
+ * Get current user session with enhanced debugging and profile verification
  */
 export async function getCurrentUser(): Promise<AuthUser | null> {
   try {
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (user) {
-      return {
-        id: user.id,
-        email: user.email!,
-        name: user.user_metadata?.name || user.email!.split('@')[0],
-        avatar_url: user.user_metadata?.avatar_url,
-        provider: user.app_metadata?.provider
-      };
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 getCurrentUser: Starting user fetch...');
     }
+
+    // First check if we have a session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ getCurrentUser: Session error:', sessionError);
+      }
+      return null;
+    }
+
+    if (!session) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ getCurrentUser: No session found');
+      }
+      return null;
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ getCurrentUser: Session found for user:', session.user?.email);
+    }
+
+    // Then get the user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ getCurrentUser: User fetch error:', userError);
+      }
+      return null;
+    }
+
+    if (!user) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ getCurrentUser: No user in session');
+      }
+      return null;
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ getCurrentUser: Auth user found:', user.email);
+    }
+
+    // Create the auth user object
+    const authUser = {
+      id: user.id,
+      email: user.email!,
+      name: user.user_metadata?.name || user.email!.split('@')[0],
+      avatar_url: user.user_metadata?.avatar_url,
+      provider: user.app_metadata?.provider
+    };
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔍 getCurrentUser: Checking profile in database...');
+
+      // Verify profile exists in database with detailed error handling
+      try {
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('id, name, email, avatar_url')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          console.warn('⚠️ getCurrentUser: Profile fetch error:', {
+            code: profileError.code,
+            message: profileError.message,
+            details: profileError.details,
+            hint: profileError.hint
+          });
+
+          // If it's a "not found" error, try to create the profile
+          if (profileError.code === 'PGRST116') {
+            console.log('🔧 getCurrentUser: Profile not found, attempting to create...');
+
+            try {
+              const { data: newProfile, error: createError } = await supabase
+                .from('users')
+                .insert({
+                  id: user.id,
+                  email: user.email!,
+                  name: authUser.name,
+                  avatar_url: authUser.avatar_url,
+                  provider: authUser.provider
+                })
+                .select()
+                .single();
+
+              if (createError) {
+                console.error('❌ getCurrentUser: Failed to create profile:', createError);
+              } else {
+                console.log('✅ getCurrentUser: Profile created successfully:', newProfile.email);
+              }
+            } catch (createErr) {
+              console.error('❌ getCurrentUser: Exception creating profile:', createErr);
+            }
+          }
+        } else if (profile) {
+          console.log('✅ getCurrentUser: Profile verified in database:', profile.email);
+        }
+      } catch (profileException) {
+        console.error('❌ getCurrentUser: Exception checking profile:', profileException);
+      }
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ getCurrentUser: Returning auth user:', authUser.email);
+    }
+
+    return authUser;
   } catch (error) {
-    console.error('Authentication error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Authentication error:', error);
+    }
   }
 
   return null;
@@ -385,7 +508,7 @@ export function getCurrentOrganizationId(): string | null {
  * Listen to auth state changes
  */
 export function onAuthStateChange(callback: (user: AuthUser | null) => void) {
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
     console.log('Auth state change:', event, session?.user?.email);
 
     if (session?.user) {

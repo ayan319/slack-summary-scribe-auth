@@ -6,6 +6,18 @@ export async function GET(request: NextRequest) {
   console.log('📊 Dashboard API called');
 
   try {
+    // Add request debugging for RSC payload issues
+    const url = new URL(request.url);
+    console.log('📊 Dashboard request details:', {
+      url: url.toString(),
+      method: request.method,
+      headers: {
+        'content-type': request.headers.get('content-type'),
+        'user-agent': request.headers.get('user-agent'),
+        'accept': request.headers.get('accept'),
+      }
+    });
+
     // Require authentication
     const user = await getAuthenticatedUser(request);
 
@@ -19,7 +31,13 @@ export async function GET(request: NextRequest) {
       console.log('📊 Dashboard: No authenticated user, returning 401');
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 }
+        {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+          }
+        }
       );
     }
 
@@ -155,21 +173,37 @@ export async function GET(request: NextRequest) {
     };
 
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: dashboardData,
       user: dashboardData.user
     });
 
+    // Add headers to prevent caching and RSC payload issues
+    response.headers.set('Content-Type', 'application/json');
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+
+    console.log('📊 Dashboard API response prepared successfully');
+    return response;
+
   } catch (error) {
     console.error('Dashboard API error:', error);
 
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       {
-        error: 'Internal server error. Please try again later.'
+        error: 'Internal server error. Please try again later.',
+        details: process.env.NODE_ENV === 'development' ? error instanceof Error ? error.message : String(error) : undefined
       },
       { status: 500 }
     );
+
+    // Add headers to prevent caching issues even on errors
+    errorResponse.headers.set('Content-Type', 'application/json');
+    errorResponse.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+    return errorResponse;
   }
 }
 

@@ -40,6 +40,7 @@ import { formatDistanceToNow } from 'date-fns';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import NotificationCenter from '@/components/NotificationCenter';
+import SessionDebug from '@/components/SessionDebug';
 import type { Summary } from '@/types/api';
 import { upsertUserProfileFromAuth } from '@/lib/upsertUserProfile';
 import { SmartTags } from '@/components/ui/smart-tags';
@@ -98,18 +99,23 @@ function DashboardContent() {
 
   const fetchDashboardData = useCallback(async () => {
     if (!user) {
+      console.log('❌ fetchDashboardData: No user, redirecting to login');
       setLoading(false);
       router.push('/login');
       return;
     }
 
     try {
+      console.log('🔄 fetchDashboardData: Starting fetch for user:', user.email);
       setLoading(true);
       setError(null);
 
-      // Add timeout to prevent infinite loading
+      // Add timeout to prevent hanging requests
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      const timeoutId = setTimeout(() => {
+        console.warn('⏰ fetchDashboardData: Request timeout, aborting');
+        controller.abort();
+      }, 8000); // 8 second timeout
 
       const response = await fetch('/api/dashboard', {
         headers: {
@@ -120,9 +126,11 @@ function DashboardContent() {
       });
 
       clearTimeout(timeoutId);
+      console.log('📊 fetchDashboardData: Response received, status:', response.status);
 
       if (!response.ok) {
         if (response.status === 401) {
+          console.log('🔒 fetchDashboardData: Unauthorized, redirecting to login');
           router.push('/login');
           return;
         }
@@ -132,8 +140,10 @@ function DashboardContent() {
       }
 
       const result = await response.json();
+      console.log('✅ fetchDashboardData: Data received successfully');
       setData(result.data);
     } catch (err) {
+      console.error('❌ fetchDashboardData: Error occurred:', err);
       if (err instanceof Error && err.name === 'AbortError') {
         setError('Request timed out. Please refresh the page.');
       } else {
@@ -141,59 +151,50 @@ function DashboardContent() {
         setError(errorMessage);
       }
     } finally {
+      console.log('🏁 fetchDashboardData: Completed, setting loading to false');
       setLoading(false);
     }
   }, [user, router]);
 
+  // Production-optimized dashboard loading
   useEffect(() => {
-    console.log('🔄 Dashboard effect - userLoading:', userLoading, 'user:', user?.email);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔄 Dashboard loading - userLoading:', userLoading, 'user:', user?.email);
+    }
 
-    // Add timeout to prevent infinite loading states
-    const loadingTimeout = setTimeout(() => {
-      if (loading && !error) {
-        console.warn('⏰ Dashboard loading timed out');
-        setError('Loading timed out. Please refresh the page.');
-        setLoading(false);
-      }
-    }, 15000); // 15 second timeout for overall loading
-
-    // Handle user loading state changes
+    // Fast, reliable loading logic for production
     if (!userLoading) {
       if (user) {
-        console.log('✅ User authenticated, loading dashboard for:', user.email);
-        // User is authenticated, ensure profile is synced and fetch dashboard data
-        upsertUserProfileFromAuth(user).then(() => {
-          console.log('✅ Profile sync completed');
-        }).catch((profileErr) => {
-          console.warn('⚠️ Profile sync failed:', profileErr);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ User authenticated, loading dashboard for:', user.email);
+        }
+
+        // Immediate dashboard data fetch for authenticated users
+        fetchDashboardData().catch((err) => {
+          console.error('Dashboard data fetch failed:', err);
+          setError('Failed to load dashboard. Please refresh the page.');
+          setLoading(false);
         });
-        fetchDashboardData();
       } else {
-        console.log('❌ No user found, redirecting to login');
-        // No user, redirect to login
+        // No user - immediate redirect to login
         setLoading(false);
         router.replace('/login');
       }
-    } else {
-      console.log('⏳ Still loading user context...');
-      // Still loading user, but set a maximum wait time
-      const userLoadingTimeout = setTimeout(() => {
-        if (userLoading) {
-          console.warn('⏰ User loading timed out');
-          // Force stop loading if user context is stuck
-          setLoading(false);
-          setError('Authentication check timed out. Please try logging in again.');
-        }
-      }, 10000); // 10 second timeout for user loading
-
-      return () => {
-        clearTimeout(loadingTimeout);
-        clearTimeout(userLoadingTimeout);
-      };
     }
 
-    return () => clearTimeout(loadingTimeout);
-  }, [userLoading, user, fetchDashboardData, router]);
+    // Production-grade safety timeout (5 seconds)
+    const safetyTimeout = setTimeout(() => {
+      if (loading) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('⚠️ Dashboard loading timeout - forcing completion');
+        }
+        setError('Dashboard is taking longer than expected. Please refresh the page.');
+        setLoading(false);
+      }
+    }, 5000); // 5 second timeout for production
+
+    return () => clearTimeout(safetyTimeout);
+  }, [userLoading, user, fetchDashboardData, router, loading]);
 
   const handleSignOut = async () => {
     try {
@@ -684,6 +685,7 @@ export default function DashboardPage() {
     <ErrorBoundary>
       <AuthGuard>
         <DashboardContent />
+        <SessionDebug />
       </AuthGuard>
     </ErrorBoundary>
   );

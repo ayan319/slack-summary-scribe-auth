@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sendEmail, isValidEmail, validateEmails, type EmailOptions } from '@/lib/resend';
-import { createRouteHandlerClient } from '@/lib/supabase';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 // Rate limiting for email sending
 const emailAttempts = new Map<string, { count: number; resetTime: number }>();

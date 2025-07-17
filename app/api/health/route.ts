@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getBaseUrl } from '@/lib/getBaseUrl';
 
 export async function GET() {
   const startTime = Date.now();
@@ -39,7 +40,7 @@ export async function GET() {
       const response = await fetch('https://openrouter.ai/api/v1/models', {
         headers: {
           'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'HTTP-Referer': process.env.NEXT_PUBLIC_SITE_URL || 'https://slack-summary-scribe.vercel.app',
+          'HTTP-Referer': getBaseUrl(),
           'X-Title': 'Slack Summary Scribe'
         }
       });

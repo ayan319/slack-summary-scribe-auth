@@ -120,10 +120,8 @@ export default function SignupPage() {
           icon: <CheckCircle className="h-4 w-4" />,
         })
 
-        // Small delay to ensure user context updates
-        setTimeout(() => {
-          router.push('/dashboard')
-        }, 1000)
+        // Immediate redirect for best UX
+        router.push('/dashboard')
 
       } else if (result.user && result.needsVerification) {
         // Email confirmation required

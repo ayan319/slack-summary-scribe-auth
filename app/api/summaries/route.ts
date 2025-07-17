@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { SentryTracker } from '@/lib/sentry.client';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createSupabaseServerClient } from '@/lib/supabase-server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,7 +8,7 @@ export async function GET(request: NextRequest) {
       userAgent: request.headers.get('user-agent'),
     });
 
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = await createSupabaseServerClient();
 
     // Get the current user session with fallback for demo mode
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -174,7 +173,7 @@ export async function POST(request: NextRequest) {
       userAgent: request.headers.get('user-agent'),
     });
 
-    const supabase = createRouteHandlerClient({ cookies });
+    const supabase = await createSupabaseServerClient();
 
     // Get the current user session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
